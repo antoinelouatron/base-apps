@@ -1,0 +1,24 @@
+{% load staticfiles %}
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<script src="{% static 'js/jquery.js' %}"></script>
+<script src="{% static 'js/form.js' %}"></script>
+</head>
+
+<body>
+<form method="POST" action="#" enctype="multipart/form-data">
+{% csrf_token %}
+{{form.as_p}}
+<input type="submit">
+</form>
+{% if insts|length > 0%}
+<h4>instances :</h4>
+<ul>
+{% for inst in insts %}
+    <li>{{inst}}
+{% endfor %}
+</ul>
+{% endif %}
+</body>
+</html>

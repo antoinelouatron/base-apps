@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-row gap-4">
+<div class="lg:w-[70%] lg:shrink-1 hidden lg:block">
+<div id="timetable-body"></div>
+</div>
+<div class="w-full lg:w-[30%]">
+    <div class="prose dark:prose-invert m-2 md:mx-auto p-2 border-x-8 rounded-lg border-yellow-200 dark:border-yellow-700">
+    Le champ participants est optionnel. Il ne sert qu'à inscrire ou désinscrire
+    manuellement un étudiant qui aurait un problème pour le faire lui même.
+    </div>
+    <div class="prose dark:prose-invert m-2 md:mx-auto p-2 border-x-8 rounded-lg border-yellow-200 dark:border-yellow-700">
+    Pour proposer un créneau de math 1 ou Mines Telecom (IMT),
+    créer deux créneau d'une demi-heure avec chacun une place.
+    <br>
+    Pour proposer un créneau de math 2, créer un créneau d'une heure
+    avec deux places.
+    <br>
+    En choisissant d'abord le nom parmi les propositions, la date de fin
+    et le nombre de places seront automatiquement remplis.
+    </div>
+    <span class="modal-btn underline text-lg" data-modal-target="#modalite-modal">Modalité des épreuves</span>
+    {% with modal_id="modalite-modal" modal_body_tmpl="agenda/components/modalite.html" modal_title="Modalités" modal_footer_tmpl="agenda/components/modalite_footer.html"%}
+    {% include "components/modal.html" %}
+    {% endwith %}
+    {% if not request.content_ctx.config.inscription %}
+    <p class="text-xl text-center">Les séances sur inscriptions ne sont pas encore ouvertes
+    pour les étudiants</p>
+    {% endif %}
+    <h3 class="my-2 text-lg">Proposer une nouvelle séance</h3>
+    <form action="#" method="POST" class="flex w-3/4 lg:w-1/2 m-auto flex-wrap justify-center">
+        {% csrf_token %}
+        {{form}}
+        <div class="w-full text-center">
+            <input type="submit" value="Valider" class="button">
+        </div>
+    </form>
+</div>
+</div>
+<div>
+<h3 class="my-2 text-lg">Séances existantes</h3>
+{% for inscr in inscriptions %}
+{{inscr.as_widget}}
+{% endfor %}
+</div>
+{% endblock content %}

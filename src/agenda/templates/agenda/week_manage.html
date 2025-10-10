@@ -1,0 +1,38 @@
+{% extends "agenda/base.html" %}
+{% block content %}
+<h3>Créer de nouvelles semaines.</h3>
+<form method="POST">
+    {% csrf_token %}
+    {{form}}
+    <input type="submit">
+</form>
+<h1>Semaines actives</h1>
+<button id="incr-beg-week">Ajouter 1</button>
+<button id="decr-beg-week">Retirer 1</button>
+<form method="post" action="{% url 'agenda:weeks_update' %}">
+{% csrf_token %}
+<table class="week-table">
+    <tr>
+        <th>Lundi</th>
+        <th>Dimanche</th>
+        <th>Vacances</th>
+        <th>N° sem</th>
+    </tr>
+    {% for dates in weeks %}
+        <tr data-weekid="{{dates.id}}" class="week-info">
+            <td>{{dates.begin}}</td>
+            <td>{{dates.end}}</td>
+            <td><input type="checkbox"
+            {% if dates.label %}
+            	checked="checked"
+            {% endif %}
+            class="holiday-check"></input>
+            <input type="text" value="{{dates.label}}" class="label"></input></td>
+            <td><input type="number" placeholder="numéro de semaine" class="week-number"
+            disabled value="{{dates.nb|default:''}}"></input></td>
+        </tr>
+    {% endfor %}
+</table>
+<div class="submit"><span class="button" id="send-weeks">MaJ</span></div>
+</form>
+{% endblock content %}

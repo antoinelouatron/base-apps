@@ -1,0 +1,13 @@
+Ajouter une note pour <span id="event-name"></span>
+<form id="note-form">
+    {% csrf_token %}
+    {{form.comment.label}}
+    {{form.comment}}
+    {% for field in form.hidden_fields %}
+    {{field}}
+    {% endfor %}
+    <div class="btn-container">
+        <span class="btn send">Envoyer</span>
+        <span class="btn cancel">Annuler</span>
+    </div>
+</form>

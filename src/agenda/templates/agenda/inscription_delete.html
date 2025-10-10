@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+{% block content %}
+Êtes-vous sûr de vouloir supprimer cette séance ?
+<div>
+{{object.as_widget}}
+</div>
+
+<form action="#" method="POST">
+    {% csrf_token %}
+    {{form}}
+    <button type="submit" class="button border border-red-500">Supprimer</button>
+    <a href="{% url 'agenda:inscription:manage' %}" class="button">Annuler</a>
+</form>
+{% endblock content %}

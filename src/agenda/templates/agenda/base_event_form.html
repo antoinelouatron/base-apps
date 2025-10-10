@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="flex flex-row gap-4">
+<div class="w-[70%] shrink-1">
+<div id="timetable-body"></div>
+</div>
+<div class="w-[30%]">
+    <h3>{%if edition_mode %}Modifier{% else %}Ajouter{% endif %}</h3>
+    <form action="#" method="POST">
+    <label for="lasting" >Durée par défaut</label>
+    <input type="number" class="mx-2" name="lasting" id="lasting" value="2" min="1" max="11">
+    {% csrf_token %}
+    {{form}}
+    <div class="text-center">
+    <input type="submit" value="{%if edition_mode %}Modifier{% else %}Ajouter{% endif %}" class="button">
+    </div>
+    </form>
+    {% if not edit_mode %}
+    <div>
+    <h3>Événéments existants</h3>
+    {% regroup events by week as ev_list %}
+    {% for week, evs in ev_list %}
+    <div class="week-group hidden" data-week="{{ week.pk }}">
+        {% for ev in evs %}
+        <div class="event border p-1 m-1">
+            <div class="event-header">
+                <h4>{{ ev.label }}</h4>
+                <span class="event-time">
+                    {{ ev.begin}} - {{ ev.end}}
+                </span>
+            </div>
+            <div class="text-center">
+            <a href="{% url 'agenda:manage_events' pk=ev.pk %}">
+                <i class="fas fa-edit m-2 fa-lg" title="Modifier"></i>
+            </a>
+            <i class="copy-event fas fa-copy m-2 fa-lg" title="Copier"
+                data-begin="{{ev.begin|date:'c'|slice:'0:19'}}"
+                data-end="{{ev.end|date:'c'|slice:'0:19'}}"
+                data-label="{{ev.label}}"
+                data-attendance="{{ev.attendance_string}}"
+                ></i>
+            <i class="remove-event fas fa-trash m-2 fa-lg modal-btn" title="Supprimer"
+            data-evid="{{ev.pk}}" data-modal-target="#delete-modal"></i>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endfor %}
+    </div>
+    {% endif %}
+</div>
+</div>
+{% with modal_title="Supprimer une entrée" modal_id="delete-modal" modal_body_tmpl="agenda/forms/delete_event_form.html"%}
+{% include "components/modal.html" %}
+{% endwith %}
+{% endblock content %}

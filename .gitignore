@@ -1,0 +1,22 @@
+TODO
+
+#config and build files
+*.log
+.*project
+*.pyc
+*__pycache__*
+*~
+*fixtures*
+.vscode/
+
+#migrations
+*migrations*
+
+#venv
+activate*
+
+#tests
+tests/htmlcov/
+tests/.tox/
+tests/.env
+

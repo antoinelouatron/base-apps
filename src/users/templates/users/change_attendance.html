@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+<form method="POST" id="group-formset">
+    {{ form.non_form_errors }}
+    {% csrf_token %}
+    {{form.management_form}}
+    <div class="formset-container m-2 md:columns-2 lg:columns-3">
+        {% for f in form %}
+        <div class="p-2 border text-center break-inside-avoid m-1">
+            Groupe {{f.instance.nb}}
+            <ul class="">
+                {% for scg in f.instance.studentcollegroup_set.all %}
+                <li>
+                    {{scg.user}}
+                </li>
+                {% endfor %}
+            </ul>
+            {{f}}
+        </div>
+        {% endfor %}
+    </div>
+
+    <input type="submit" class="button"/>
+</form>
+
+{% endblock %}

@@ -1,0 +1,23 @@
+<div data-formset-form class="m-2 border rounded-sm shadow-sm">
+    <div class="atomic-toolbar  flex">
+    <div class="atomic-utils mr-2">
+        <span class="w-6 text-center inline-block p-1 border rounded-sm weekset" data-week-begin="2" data-week-periodicity="2" title="Semaines paires">0</span>
+        <span class="w-6 text-center inline-block p-1 border rounded-sm weekset" data-week-begin="1" data-week-periodicity="2" title="Semaines impaires">1</span>
+        <span class="w-6 text-center inline-block p-1 border rounded-sm weekset" data-week-begin="1"
+            data-week-periodicity="3" title="Semaines A">A</span>
+        <span class="w-6 text-center inline-block p-1 border rounded-sm weekset" data-week-begin="2" data-week-periodicity="3"
+             title="Semaines B">B</span>
+        <span class="w-6 text-center inline-block p-1 border rounded-sm weekset" data-week-begin="3" data-week-periodicity="3"
+             title="Semaines C">C</span>
+    </div>
+    <div class="atomic-management">
+        <i data-formset-delete-button class="w-8 text-center fas fa-times fa-2x" title="Supprime seulement le formulaire"></i>
+        <i class="formset-copy-btn w-8 text-center far fa-copy fa-2x" title="Copier"></i>
+        <i class="formset-complementcopy-btn w-8 text-center far fa-file fa-2x" title="Créer le complémentaire"></i>
+        <i class="formset-complement-attendance-btn w-8 text-center far fa-file fa-2x" title="Complémenter l'assistance"></i>
+    </div>
+    </div>
+    <div class="flex flex-wrap justify-center">
+    {{form}}
+    </div>
+</div>

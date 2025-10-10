@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+{% block content %}
+<form action="#", method="POST" class="w-3/4 m-auto flex flex-wrap justify-evenly items-end">
+    {% csrf_token %}
+{{form}}
+<div class="w-full text-center">
+    <button type="submit" class="button">Envoyer</button>
+    <a href="/" class="button text-primary no-underline visited:text-white">Annuler</a>
+</div>
+</form>
+{% endblock content %}

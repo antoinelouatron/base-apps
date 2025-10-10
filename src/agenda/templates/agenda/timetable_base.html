@@ -1,0 +1,28 @@
+{% load hour_to_percent %}
+
+<div id="timetable" class="flex h-full overflow-x-hidden relative" data-current-day="{{current_day|default:0}}">
+    <div class="time-scheme w-14 text-center -mt-3 bg-surface1 z-10">
+        <div class="h-8"></div>
+        {% for hour in hours %}
+        <div class="hour-label h-8">{{hour}}</div>
+        {% endfor %}
+    </div>
+    {% for hour in hours %}
+    <div class="sep absolute w-full border-t border-dashed z-1 left-14 border-primary/50" style="top:{{forloop.counter|add:forloop.counter}}rem"></div>
+    {% endfor %}
+    <div class="tt-body grow flex flex-wrap flex-col transition" id="days-container">
+        {% for day in agenda %}
+        <div class="day-container border-x w-full{% if responsive %} lg:w-1/5{% endif %} h-full">
+        <div class="text-center border-b h-8 label-container">{{day.label}}</div>
+        <div class="day" data-number="{{day.num}}">
+            <div class="day-content relative h-[46rem]">
+                {% for ev in day %}
+                    {% include event_render %}
+                {% endfor %}
+            </div>
+        </div></div>
+        {% endfor %}
+    </div>
+</div>
+{% block add_content %}
+{% endblock %}

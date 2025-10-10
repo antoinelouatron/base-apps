@@ -1,0 +1,13 @@
+{% extends "agenda/timeline/base.html" %}
+{% block event %}
+{% if not event.group.void %}
+<div class="flex">
+    <div class="dark:bg-green-700 bg-green-200 shrink-0 w-6 flex items-center min-h-12 justify-center rounded-l-lg">
+        <i class="fas fa-file"></i>
+    </div>
+    <div class="p-2">{{event.date|date:"d/m"}}, colle
+        {% if is_teacher %} groupe {{event.group.nb}}{% else %}{{event.event.sep_subject}}
+        avec {{event.event.teacher}}{% endif %}</div>
+</div>
+{% endif %}
+{% endblock event %}

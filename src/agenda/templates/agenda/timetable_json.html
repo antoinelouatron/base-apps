@@ -1,0 +1,32 @@
+<div class="tt-btns flex justify-center items-center flex-wrap">
+    {% if adjacent.prev %}
+    <span class="tt-load cursor-pointer m-2 border-t-20 border-t-transparent border-b-20 border-b-transparent border-r-20 border-r-violet-500"
+    data-week="{{adjacent.prev.id}}" title="Semaine précédente"></span>
+    {% endif %}
+    <div class="tt-title flex flex-wrap">
+        <span class="block">{% if week.label %}{{week.label}}{% else %}
+        Semaine {{week.nb}}
+        {% endif %}, {{week.begin|date:"d/m"}} - {{week.end|date:"d/m"}}<span>
+        {% if saturday %}<span class="block">Samedi : {{saturday.0.label}}</span>{% endif %}
+    </div>
+    {% if adjacent.next %}
+    <span class="tt-load cursor-pointer m-2 border-t-20 border-t-transparent border-b-20 border-b-transparent border-l-20 border-l-violet-500"
+    data-week="{{adjacent.next.id}}" title="Semaine suivante"></span>
+    {% endif %}
+    <span id="change-week" class="button modal-btn" title="Choisir une semaine"
+        data-modal-target="#week-picker-modal">
+        <i class="fas fa-calendar-week pointer-events-none"></i>
+    </span>
+    {% with modal_id="week-picker-modal" modal_body_tmpl="agenda/components/tt_week_picker.html" modal_title="Choisir une semaine"%}
+{% include "components/modal.html" %}
+{% endwith %}
+{% if is_teacher %}
+<span class="hidden lg:block button modal-button" data-modal-target="#tt-user-select"
+    id="user-select-btn">
+    <i class="fas fa-user-secret pointer-events-none"></i></span>
+{% with modal_id="tt-user-select" modal_title="Voir l'EDT en tant que" modal_footer_tmpl="agenda/components/modal_reset_tt_user.html"%}
+{% include "components/modal.html" %}
+{% endwith %}
+{% endif %}
+</div>
+{% with responsive=True %}{% include "agenda/timetable_arrows.html" %}{% endwith %}

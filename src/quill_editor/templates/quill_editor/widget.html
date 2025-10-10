@@ -1,0 +1,25 @@
+{% load static %}
+<div class="vLargeTextField django-quill-widget-container">
+    <div id="quill-{{ id }}" class="django-quill-widget" 
+    {% comment %}data-config="{{ config }}"{% endcomment %} data-type="django-quill"></div>
+    <input id="quill-input-{{ id }}" name="{{ name }}" type="hidden">
+    <template id="quill-template-{{ id }}">{{ value|safe }}</template>
+    <script>
+        (function() {
+            let wrap = function () {
+                var wrapper = new ns.QuillWrapper(
+                        "quill-{{ id }}",
+                        "quill-input-{{ id }}",
+                        JSON.parse("{{ config|safe|escapejs }}")
+                    );
+                    template = document.getElementById("quill-template-{{ id }}");
+                wrapper.quill.clipboard.dangerouslyPasteHTML(0, template.innerHTML);
+            };
+            if (document.readyState !== "loading") {
+                wrap();
+            } else {
+                document.addEventListener("DOMContentLoaded", wrap);
+            }
+        })();
+    </script>
+</div>

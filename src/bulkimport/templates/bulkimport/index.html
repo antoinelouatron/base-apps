@@ -1,0 +1,10 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h4>Téléversement de fichiers disponibles</h4>
+<ul>
+{% for url, name in urls %}
+<li><a href="{{url}}">{{name}}</a></li>
+{% endfor %}
+</ul>
+{% endblock %}

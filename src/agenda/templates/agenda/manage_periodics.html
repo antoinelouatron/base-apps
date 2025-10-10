@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="w-full flex justify-center items-center">
+    <label for="first-week">1ère semaine</label>
+    <input type="number" id="first-week" name="first-week" value="1" class="w-12 mr-2">
+    <label for="last-week">Dernière semaine</label>
+    <input type="number" id="last-week" name="last-week" value="36" class="w-12">
+</div>
+<div class="flex">
+    <div class="w-[70%]">
+    {% with event_render="agenda/periodic_tt_event.html" %}
+    {% include "agenda/timetable_arrows.html" %}
+    {% endwith %}
+    </div>
+    <template id="new-event-widget">
+    {% include "agenda/components/newevent_widget.html" %}
+    </template>
+    <template id="atomic-wrapper">
+    {% include "agenda/components/periodic_wrapper.html" %}
+    </template>
+    <div class="manage-tt w-[30%]" >
+        <form method="POST" action="#" id="periodic-manage" data-formset-prefix="{{form.prefix}}">
+            {% csrf_token %}
+            {{form.management_form}}
+            <div data-formset-body class="formset-body">
+
+            </div>
+            <div class="formset-management">
+            <i data-formset-add class="fa fa-plus-square fa-2x to-left" title="Ajouter"></i>
+            <i class="fas fa-paper-plane fa-2x to-right send-formset" title="Envoyer"></i>
+            </div>
+        <template type="form-template" data-formset-empty-form>
+    {% with empty_form as form %}
+        {% include 'agenda/forms/atomic_periodic.html' %}
+    {% endwith %}
+        </template>
+        </form>
+    </div>
+</div>
+<span class="button modal-btn" data-modal-target="#full-tt">Tout voir</span>
+{% with modal_id="full-tt" modal_body_tmpl="agenda/timetable_base.html" event_render="agenda/periodic_tt_event.html" responsive=True wfull=True modal_title="EDT"%}
+{% include "components/modal.html" %}
+{% endwith %}
+<span class="button"><a href="{% url 'agenda:export_timetable' level_id=level.id %}">Export</a></span>
+<span class="button check-tt" data-url="{% url 'agenda:check_agenda' level_id=level.id %}">Vérifier</span>
+<span class="button"><a href="{% url 'agenda:print_timetable' level_id=level.id %}">Imprimer</a></span>
+<div id="check-result"></div>
+{% with modal_id="teacher-dialog" modal_body_tmpl="agenda/forms/teacher_popup.html" modal_title="Choisir un professeur" modal_footer_tmpl="agenda/forms/teacher_modal_footer.html"%}
+{% include "components/modal.html" %}
+{% endwith %}
+{% endblock content %}

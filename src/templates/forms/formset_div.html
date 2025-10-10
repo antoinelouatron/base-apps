@@ -1,0 +1,4 @@
+{% load dict_to_data %}
+{{ formset.management_form }}{% for form in formset %}
+<div {% with classes=form.formset_classes %}{% if classes %} class="{{classes}}"{% endif %}{% endwith %}>{{ form.as_div }}</div>
+{% endfor %}

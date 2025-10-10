@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" type="text/css" href="/static/style/main.css">
+<title>EDT | PT</title>
+<style>
+.attendance-4 {
+    display: flex;
+    flex-direction: column;
+    max-height: 100%;
+    flex-wrap: wrap;
+}
+#timetable {
+    height: 100vh;
+    overflow-y: hidden;
+}
+
+.event {
+    border-top: 1px solid black;
+    border-bottom: 1px solid black;
+    font-size: 12px;
+    color: black;
+}
+.sep {
+    opacity:0.3;
+}
+.day-container {
+    border-right: 1px solid black;
+}
+.overlap-2 {
+    border-color: black;
+}
+
+.small {
+    font-size: 10px;
+}
+.medium {
+    font-size: 12px;
+}
+.big {
+    font-size: 13px;
+}
+#djDebugToolbarHandle {
+    display: none;
+}
+</style>
+</head>
+<body>
+{% with event_render="agenda/periodic_tt_event.html" responsive=True %}
+{% include "agenda/timetable_base.html" %}
+{% endwith %}
+</body>

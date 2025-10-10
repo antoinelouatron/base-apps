@@ -1,0 +1,43 @@
+{% load hour_to_percent %}
+{% load l10n %}
+{% load math_tag %}
+
+<div class="absolute border flex flex-wrap flex-col justify-center items-center event {{ev.subject|default:'colle'}} {% event_classes ev %} popup-btn"
+    style="top:{% to_rem ev.beghour %}rem; height:{% to_rem ev.endhour ev.beghour %}rem; width:100%;"
+           data-groupslist="{{ev.groups}}"
+           data-eventtype="{{ev.type}}"
+           data-eventid="{{ev.id}}"
+           {% if ev.type == "colle" %}
+           data-weekid="{{week.id}}"
+           {% endif %}>
+    {% if ev.note_nb %}
+    <div class="absolute z-10 top-0 left-0 flex w-full h-full items-center opacity-30 justify-center note-overlay">
+        {% comment %} <div class="event-note w-1/2 flex justify-center items-center border-r" data-popup="#{{ev.note_popup_id}}">
+            <i class="fas fa-pen fa-2x"></i>
+        </div> {% endcomment %}
+        {% comment %} <div class="attendant-list-icon w-1/2 flex justify-center items-center">
+            <i class="fas fa-list fa-2x"></i>
+        </div> {% endcomment %}
+        <i class="fas fa-pen fa-2x"></i>
+    </div>
+    {% endif %}
+
+    <div>
+        {{ ev.label }}
+    </div>
+    {% if ev.type == "colle" %}
+        {% if curr_user.teacher %}
+        <div>
+        Groupe {{ev.groups.0}}
+        </div>
+        {% else %}
+        <div>
+        Avec {{ev.teachers.0}}
+        </div>
+        {% endif %}
+    {% endif %}
+    {% if ev.classroom %}
+    <div>s. {{ev.classroom}}</div>
+    {% endif %}
+
+</div>

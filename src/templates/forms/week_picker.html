@@ -1,0 +1,8 @@
+{% include "forms/field.html" %}
+    <span id="change-week" class="button modal-btn mx-1" title="Choisir une semaine"
+        data-modal-target="#week-picker-modal">
+        <i class="fas fa-calendar-week pointer-events-none"></i>
+    </span>
+    {% with modal_id="week-picker-modal" modal_body_tmpl="content/components/tt_week_picker.html" modal_title="Choisir une semaine"%}
+{% include "components/modal.html" %}
+{% endwith %}

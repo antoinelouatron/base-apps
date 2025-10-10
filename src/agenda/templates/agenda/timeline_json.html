@@ -1,0 +1,21 @@
+{% load l10n %}
+<div class="h-[80vh]">
+<div class="flex-auto overflow-y-auto max-h-full"> <!-- https://codepen.io/mathiesjanssen/pen/ggeBKm overflow-y-auto -->
+    <div class="relative mt-2 h-full table mx-auto">
+        <div class="after:content-[''] after:w-0.5 after:absolute after:top-2 after:bottom-0 after:left-[84px] after:bg-primary">
+    {% for month in timeline %}
+        <div class="relative">
+            <h3 class="sticky top-2">{{month.month|date:"M Y"|capfirst}}</h3>
+            <div class="-mt-5 relative mb-5 pb-3">
+                <ol class="pl-20 md:pl-24 -mt-5 max-w-[32rem] after:content-[''] after:w-2.5 after:h-2.5 after:border after:rounded-full after:absolute after:left-20 after:top-1 after:bg-primary">
+            {% for event in month.objects %}
+                {% include event.timeline_template %}
+            {% endfor %}
+                </ol>
+            </div>
+        </div>
+    {% endfor %}
+        </div>
+    </div>
+</div>
+</div>

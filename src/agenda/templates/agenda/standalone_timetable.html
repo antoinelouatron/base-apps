@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div id="timetable-body"></div>
+{% with modal_title="Ajouter une note" modal_id="note-modal" modal_body_tmpl="agenda/components/note_modal.html" modal_footer_tmpl="components/modal_form_footer.html"%}
+{% include "components/modal.html" %}
+{% endwith %}
+{% with modal_title="" modal_id="note-modal-details" %}
+{% include "components/modal.html" %}
+{% endwith %}
+{% endblock content %}

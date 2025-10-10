@@ -1,0 +1,25 @@
+{% if end and begin and week %}
+<div class="text-center">
+    Semaine {{week}}, du {{begin}} au {{end}}
+</div>
+{% endif %}
+<ul class="prose dark:prose-invert max-w-none">
+    {% for chap in chapitres %}
+    <li class="chap">
+        <h4>{{chap.title}}</h4>
+        {% if chap.env == "itemize" %}
+        <ul>
+        {% else %}
+        <ol>
+        {% endif %}
+            {% for point in chap.points %}
+            <li>{{point}}</li>
+            {% endfor %}
+        {% if chap.env == "itemize" %}
+        </ul>
+        {% else %}
+        </ol>
+        {% endif %}
+    </li>
+    {% endfor %}
+</ul>

@@ -1,0 +1,2 @@
+#!/bin/bash
+python manage.py test agenda bulkimport core dev quill_editor users utils --exclude-tag=download

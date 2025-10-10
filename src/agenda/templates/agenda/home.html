@@ -1,0 +1,13 @@
+{% extends "agenda/base.html" %}
+
+{% block content %}
+<ul>
+    {% for menu in all_menus.1 %}
+        {% if not forloop.first %}
+        <li class="p-2 lg:p-1">
+            <a href="{{menu.url}}" class="text-lg{% if menu.active %} text-orange-700 dark:text-orange-300{% endif %}">{{menu.title}}</a>
+        </li>
+        {% endif %}
+    {% endfor %}
+</ul>
+{% endblock content %}

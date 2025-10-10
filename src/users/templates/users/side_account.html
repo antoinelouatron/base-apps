@@ -1,0 +1,15 @@
+{% if request.user.avatar %}
+<img src="{{request.year_user.avatar.file.url}}"
+    class="rounded-full drop-shadow-sm" alt="avatar" width="64" height="64">
+{% else %}
+<div class="relative size-16 overflow-hidden bg-gray-100 drop-shadow-sm rounded-full dark:bg-gray-600">
+    <svg class="absolute size-18 text-gray-400 -left-1" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
+</div>
+{% endif %}
+<div class="basis-full text-center mb-1">{{request.user.display_name}}</div>
+
+<a href="{% url "users:account" %}" class="button text-primary no-underline visited:text-white">Profil</a>
+<form action="{% url "account_logout" %}?next={{request.path_info}}" method="POST">
+    {% csrf_token %}
+    <button type="submit" class="button">Déconnexion</button>
+</form>

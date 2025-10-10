@@ -1,0 +1,17 @@
+{% extends 'bulkimport/index.html' %}
+
+{% block content %}
+<p>{{message}}</p>
+<h4>Importer des {{title_name}}</h4>
+<form action="{{action_url}}" method="POST" enctype="multipart/form-data">
+{% csrf_token %}
+{{form}}
+<input class="button" type="submit" value="Envoyer">
+</form>
+
+<a href="{% url 'import:index' %}">Retour</a>
+
+{% if instances %}
+{{instances}}
+{% endif %}
+{% endblock %}

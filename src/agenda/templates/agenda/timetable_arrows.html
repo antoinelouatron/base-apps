@@ -1,0 +1,11 @@
+<div class="h-[48rem] flex">
+    <div class="prev-day border-r w-[10%] {% if responsive%}lg:hidden{% endif %} flex items-center justify-center rounded-l shadow-sm bg-surface2 hover:bg-surface2/50" data-direction="-1">
+        <div class="pointer-events-none border-t-20 border-t-transparent border-b-20 border-b-transparent border-r-20 border-r-violet-500"></div>
+    </div>
+    <div class="actual-tt w-[80%] lg:w-full">
+        {% include "agenda/timetable_base.html" %}
+    </div>
+    <div class="next-day day-arrow w-[10%] {% if responsive%}lg:hidden{% endif %} flex items-center justify-center rounded-r shadow-sm bg-surface2 hover:bg-surface2/50" data-direction="1">
+        <div class="pointer-events-none border-t-20 border-t-transparent border-b-20 border-b-transparent border-l-20 border-l-violet-500"></div>
+    </div>
+</div>

@@ -1,0 +1,5 @@
+{% if self.avatar_validation %}
+<span class="avatar-nb" title="{{self.avatar_validation}} avatar{{self.avatar_validation|pluralize}} à valider">
+<a href="{{self.target}}"><i class="fas fa-portrait"></i></a></span>
+<script>setTimeout(function() {alert("Avatar{{self.avatar_validation|pluralize}} à valider !")}, 250)</script>
+{% endif %}

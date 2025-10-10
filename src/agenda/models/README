@@ -1,0 +1,7 @@
+3 types d'EDT :
+
+- création qui gère les evt périodiques + la compatibilité + le merge
+- affichage qui gère l'override par des base event.
+- check qui gère toutes les compatibilités
+
+Chacun ne contient que des TimeSpan

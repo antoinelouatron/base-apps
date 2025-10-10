@@ -1,0 +1,7 @@
+<div class="m-2">{% if widget.label_widget %}
+<label for="{{widget.label_widget.id}}" class="_name-field-label">
+    {{widget.label_widget.label}}
+</label>
+{% endif %}
+{% include "django/forms/widgets/input.html" %}
+</div>

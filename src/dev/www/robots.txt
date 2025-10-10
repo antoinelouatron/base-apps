@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+User-Agent: *
+Disallow: /profil/
+Disallow: /agenda/
+Disallow: /notes/
+
+Sitemap: https://prepa.louatron.fr/sitemap.txt

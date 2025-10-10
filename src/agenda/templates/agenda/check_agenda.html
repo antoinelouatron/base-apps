@@ -1,0 +1,12 @@
+{% comment %}
+Here agenda is a CompatTimetable instance
+{% endcomment %}
+{% if agenda.compatible %}
+Tout baigne !
+{% else %}
+<ul>
+{% for c in agenda.incomp %}
+<li>{{c}}</li>
+{% endfor %}
+</ul>
+{% endif %}

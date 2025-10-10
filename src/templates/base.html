@@ -1,0 +1,235 @@
+{% spaceless %}{% load static%}{% load breakpoints %}
+{% load render_bundle from webpack_loader %}
+{% load media_tag %}
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% icon_url 'apple-touch-icon-144x144.png' %}" />
+<link rel="apple-touch-icon-precomposed" sizes="152x152" href="{% icon_url 'apple-touch-icon-152x152.png' %}" />
+<link rel="icon" type="image/png" href="{% icon_url 'favicon-32x32.png' %}" sizes="32x32" />
+<link rel="icon" type="image/png" href="{% icon_url 'favicon-16x16.png' %}" sizes="16x16" />
+{% if canonical %}
+<link rel="canonical" href="{{canonical}}" />
+{% endif %}
+<meta name="application-name" content="CPGE PT à Rouen"/>
+<meta name="msapplication-TileColor" content="#FFFFFF" />
+<meta name="msapplication-TileImage" content="{% icon_url 'mstile-144x144.png' %}" />
+{% if page_description %}
+<meta name="description" content="{{page_description}}">
+{% endif %}
+{% block style %}
+{% for style in style_list %}
+<link rel="stylesheet" type="text/css" media="screen" href="{% static style %}">
+{% endfor %}
+<link rel="stylesheet" href="{%static 'style/fontawesome/all.min.css'%}">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+{% for style in print_styles %}
+<link rel="stylesheet" type="text/css" media="print" href="{% static style %}">
+{% endfor %}
+{% if custom_styles %}<style class="custom-styles">
+    {% for cs in custom_styles %}{{cs}}{% endfor %}
+</style>{% endif %}
+{% endblock style %}
+
+{% block headscripts %}
+<script class="inline-script">{% include "inline_head_script.js" %}</script>
+{% if popns %}{{popns.data|json_script:"nsdata"}}
+<script>
+ns.django = JSON.parse(document.getElementById("nsdata").textContent);
+Object.assign(ns.debug, ns.django.debug);
+delete ns.django.debug;
+</script>
+{% endif %}
+{% block bundles %}
+{% for script in script_list %}
+{% render_bundle script attrs="defer" %}
+{% endfor %}
+{% endblock bundles %}
+{% if rich_results %}
+<script type="application/ld+json">{{rich_results|safe}}</script>
+{% endif %}
+{% endblock headscripts %}
+
+{% block quill %}
+{% if needs_quill %}
+<link href="{% static 'style/quill.snow.css'%}" rel="stylesheet" media="screen">
+{% endif %}
+{% endblock quill %}
+{% block latex %}
+{% if needs_latex %}
+<link href="{% static 'style/katex.min.css'%}" rel="stylesheet" media="screen">
+{% endif %}
+{% endblock latex %}
+
+<title>CPGE Blaise Pascal | {{page_title}}</title>
+</head>
+<body class="relative min-h-screen max-w-(--breakpoint-2xl) m-auto bg-surface text-primary 2xl:border-r-2 2xl:border-surface2{% if dark_theme%} dark{% endif %}">
+<div id="growl-notif" class="fixed scale-0 -mx-32 w-64 top-4 left-1/2 [&.open]:scale-100 [&.open]:animate-unfoldIn [&.out]:scale-100 [&.out]:animate-unfoldOut flex rounded-xl shadow z-50">
+    <div class="growl-icon self-center w-auto">
+        <i class="px-1.5 text-2xl"></i></div>
+    <div class="growl-content flex-1 min-h-20 self-center"></div>
+    <i class="growl-close fa fa-times p-2"></i>
+</div>
+{% block left_side %}
+<nav class="w-80 min-h-screen h-full fixed bg-surface1 -translate-x-80 {% get_class_for min_size 'nav' %} transition-transform [&.shown]:translate-x-0 top-0 z-20"
+id="sidebar">
+
+    {% block top_left %}{% endblock top_left %}
+    <div id="theme-toggle" class="flex flex-row mb-2 mt-1 w-1/2 m-auto">
+        <span class="light-theme w-20 inline-block h-7 pt-0.5 border text-center cursor-pointer"><i class="fas fa-sun fa-lg"></i></span>
+        <span class="dark-theme w-20 inline-block h-7 pt-0.5 border text-center cursor-pointer"><i class="fas fa-moon fa-lg"></i></span>
+        <span
+        class="w-20 bg-black/75 inline-block absolute h-7 left-20 dark:translate-x-20 transition-transform">
+    </span>
+    </div>
+    <span onclick="ns.menus.closeSidebar()" class="{% get_class_for min_size 'bars' %} absolute right-2 top-1" title="close menu">
+        <i class="fas fa-times fa-2x"></i>
+    </span>
+    {% block login_account %}
+    <div class="login-container">
+        {% if request.user.is_authenticated %}
+        <div class="flex justify-center flex-wrap">
+            {% include "users/side_account.html" %}
+        </div>
+        {% else %}
+        <div class="flex justify-center mt-2">
+            <span class="button modal-btn" data-modal-target="#login-modal">Se connecter</span>
+            <noscript>
+            Le bouton ci-dessus, comme tous les éléments interactifs de ce site,
+            nécessite JavaScript.
+
+            Sans garanti pour l'expérience utilisateur, vous pouvez vous connecter en suivant ce lien:
+                <a href="{% url 'account_login' %}" class="button">Se connecter</a>.
+            
+            Précisons tout ce même que les scripts présents sur ce site sont des scripts
+            maisons et que les dépendances sont toutes open source.
+
+            Vous pourrez trouver la liste des bibliothèques utilisées sur la page
+            <a href="{% media_url 'documents/a-propos.html' %}">à propos</a>.
+            </noscript>
+        </div>
+        {% endif %}
+    </div>
+    {% endblock %}
+    {% if request.user.is_authenticated %}
+    <nav class="main-nav vt-name-[main-nav] h-[calc(100%_-_180px)] overflow-auto flex flex-col" id="main-nav">
+    {% else %}
+    <nav class="main-nav vt-name-[main-nav] h-[calc(100%_-_88px)] overflow-auto flex flex-col" id="main-nav">
+    {% endif %}
+
+    {% block navigation %}{% include "side_navigation.html" %}{% endblock %}
+    </nav>
+</nav>
+{% block login_modal %}
+{% if not request.user.is_authenticated %}
+{% with modal_id="login-modal" modal_body_tmpl="users/login_form.html" modal_title="Identifiez vous"%}
+{% include "components/modal.html" %}
+{% endwith %}
+{% endif %}
+{% endblock login_modal %}
+{% endblock left_side %}
+
+<div class="fixed w-full h-screen z-10 bg-surface3/75 hidden top-0"
+onclick="ns.menus.closeSidebar()" title="close side menu" id="overlay"></div>
+
+<div class="{% get_class_for min_size 'content' %} relative flex flex-col min-h-screen" id="content">
+    <header class="flex flex-wrap p-2 mt-0 lg:p-3 min-h-20 items-center">
+        {% block header %}
+        {% block bars %}
+        <span class="p-1 rounded-sm mx-1 sm:p-2 sm:mx-2 my-auto {% get_class_for min_size 'bars' %} inline-block w-12" onclick="ns.menus.openSidebar()">
+            <i class="fa fa-bars fa-2x"></i>
+        </span>
+        {% endblock bars %}
+        
+        {% block breadcrumb %}
+        <nav class="vt-name-[main-breadcrumb] self-center flex px-2 lg:px-5 py-2 lg:py-3 border border-gray-200 rounded-lg bg-gray-50 dark:bg-gray-800 dark:border-gray-700" aria-label="Breadcrumb">
+        <ol class="inline-flex rounded-sm overflow-hidden">{%for item in breadcrumb %}
+            {% if forloop.first %}
+            <li class="inline-flex items-center">
+            <a class="inline-flex items-center text-sm font-medium text-primary hover:text-blue-600 dark:hover:text-blue-300" href={{item.url}}>{{item.icon}}</a>
+            </li>
+            {% elif not forloop.last %}
+            <li>
+                <div class="flex items-center">
+                    <svg class="block w-3 h-3 mx-1 text-gray-400 " aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                      <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                    </svg>
+                    <a href="{{item.url}}" class="ms-1 text-sm font-medium text-primary hover:text-blue-600 md:ms-2 dark:hover:text-blue-300">{{item.current|default:item.title}}</a>
+                  </div>
+            </li>
+            {% else %}
+            <li aria-current="page">
+                <div class="flex items-center">
+                  <svg class=" w-3 h-3 mx-1 text-gray-400" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 6 10">
+                    <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m1 9 4-4-4-4"/>
+                  </svg>
+                  <span class="ms-1 text-sm font-medium text-gray-500 dark:text-grey-400 md:ms-2">{{item.current|default:item.title}}</span>
+                </div>
+              </li>
+            {% endif %}
+        {% endfor %}</ol></nav>
+        {% endblock %}
+        {% block actions %}
+              {% if staff_actions %}{% include "actions.html" %}{% endif %}
+        {% endblock actions %}
+        <h3 class="p-2 pl-6"><b>{{page_title}}</b></h3>
+        {% endblock header %}
+    </header>
+
+    {% block top_body %}
+    {% endblock %}
+
+    {% block body %}
+
+    {% block message_list %}
+    {% if messages %}
+    <ul class="messages">
+        {% for message in messages %}
+        <li {% if message.tags %}class="msg-{{ message.tags }}"{% endif %}>{{ message }}</li>
+        {% endfor %}
+    </ul>
+    {% endif %}
+    {% if request.session.see_as %}
+    Mode de visualisation !
+    {% else %}
+    {% endif %}
+    {% endblock message_list %}
+
+    <div id="content" class="grow shrink-0 basis-auto">
+        {% block content_header %}{% endblock content_header %}
+        {% block content %}{% endblock %}
+    </div>
+
+    {% endblock body %}
+{% block footer %}
+    <footer class="shrink-0 border-t p-1 text-right">
+    
+<p xmlns:cc="http://creativecommons.org/ns#">Tous les PDF de ce site sont fournis sous license
+<a href="https://creativecommons.org/licenses/by-nc/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">
+CC BY-NC
+<img class="inline-block" height="20" width="20" style="height:20px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="">
+<img class="inline-block" height="20" width="20" style="height:20px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1" alt="">
+<img class="inline-block" height="20" width="20" style="height:20px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/nc.svg?ref=chooser-v1" alt="">
+</a></p>
+    
+    </footer>
+{% endblock footer %}
+</div>
+<div id="loading-anim" class="absolute scale-0 top-0 left-0 right-0 bottom-0
+z-50 bg-surface2/80 text-center transition-transform [&.shown]:scale-100">
+    <div class="text-5xl relative top-1/2 -mt-6 lg:-mt-16 flex flex-wrap justify-center">
+        <span class="basis-full">Chargement en cours</span>
+{% for tmpl_name in animation_templates %}
+{% with anim_duration="5s" repeat_anim="indefinite" %}
+<svg viewbox="0 0 66 66"
+class="w-1/4 max-w-72 hexagon-icon animated stroke-surface5 fill-surface5 inline-block">
+    {% include tmpl_name %}
+</svg>{% endwith %}
+{% endfor %}
+    </div>
+</div>
+</body>
+</html>{% endspaceless %}

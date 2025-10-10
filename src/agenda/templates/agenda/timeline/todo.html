@@ -1,0 +1,27 @@
+{% extends "agenda/timeline/base.html" %}
+{% block event %}
+<div class="flex">
+    {% if event.msg_level == event.INFO %}
+    <div class="dark:bg-blue-700 bg-blue-200 shrink-0 w-6 flex items-center min-h-12 justify-center rounded-l-lg">
+        <i class="fas fa-info-circle"></i>
+    </div>
+    {% elif event.msg_level == event.WARNING %}
+    <div class="dark:bg-yellow-700 bg-yellow-200 shrink-0 w-6 flex items-center min-h-12 justify-center rounded-l-lg">
+        <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    {% elif event.msg_level == event.ALERT %}
+    <div class="dark:bg-red-700 bg-red-200 shrink-0 w-6 flex items-center min-h-12 justify-center rounded-l-lg">
+        <i class="fas fa-exclamation-circle"></i>
+    </div>
+    {% endif %}
+    <div class="">
+    {% if event.long_label %}
+        <div class="p-2">{{event.date|date:'d/m'}}, {{event.label}}</div>
+        <div class="border mr-2"></div>
+        <div class="p-2">{{event.long_label}}</div>
+    {% else %}
+        <div class="p-2">{{event.date|date:'d/m'}}, {{event.label}}</div>
+    {% endif %}
+    </div>
+</div>
+{% endblock event %}

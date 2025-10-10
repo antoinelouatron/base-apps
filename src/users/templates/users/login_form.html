@@ -1,0 +1,28 @@
+<form id="login-form" class="max-w-sm mx-auto" method="post"
+action="{% url 'account_login' %}{% if next %}?next={{next}}{% endif %}">
+    {% csrf_token %}
+    {{form.non_field_errors}}
+    <div class="mb-5">
+        <label class="block mb-2" for="id_username">Email ou nom d'utilisateur</label>
+        <input class="bg-surface1/50 rounded-sm border-gray-500 border focus:ring-blue-500 focus:border-blue-500 w-full p-2.5" 
+        type="text" name="username" id="id_username" required autocomplete="email">
+        {{form.username.errors}}
+    </div>
+    <div class="mb-5">
+        <label class="block mb-2" for="id_password">Mot de passe</label>
+        <input class="bg-surface1/50 rounded-sm border-gray-500 border focus:ring-blue-500 focus:border-blue-500 w-full p-2.5" type="password"
+        name="password" id="id_password" required autocomplete="current-password">
+        <span class="underline block mt-1.5">{{form.password.help_text}}</span>
+        {{form.password.errors}}
+    </div>
+    <div class="mb-5">
+        <input type="checkbox" name="remember" id="id_remember" checked>
+        <label for="id_remember" class="ml-2">Se souvenir de moi</label>
+    </div>
+    <button class="login-btn button" type="submit">Login</button>
+</form>
+{% block login_form_control %}
+<div class="flex justify-between">
+    <a href="{% url 'account_reset_password' %}" class="text-sm">Mot de passe oublié ?</a>
+</div>
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% load dict_to_data %}
+
+{% block content %}
+<h4>Voir avec les yeux d'un autre</h4>
+<input class="bg-surface1/50 p-2 rounded-sm w-1/2 border m-auto block" type="text"
+id="filter-text" placeholder="Filtrer les résultats" />
+<ul class="user-list mb-2">
+    <li class="user">
+        <a href="{{referer}}see_as=-1">Anonyme <span class="see-as">
+            <i class="fas fa-sign-in-alt"></i></span></a>
+    </li>
+    {% for user in object_list %}
+    <li class="user" {% dict_to_data user.name_dict %}>
+        <a href="{{referer}}see_as={{user.pk}}">{{user.display_name}} <span class="see-as">
+            <i class="fas fa-sign-in-alt"></i></span></a>
+    </li>
+    {% endfor %}
+</ul>
+<span class="button" id="reset-user"><a href="{{referer|slice:':-1'}}?reset_user=1" class="text-white">Annuler</a></span>
+{% endblock %}

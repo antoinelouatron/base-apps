@@ -1,0 +1,17 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<h1 class="pl-2 text-lg">Mon compte</h1>
+{{user.roles.roles}}
+{% if user.student %}Groupe de colle {{group.nb}}
+{% endif %}
+    <div id="user-prefs">
+    <h3 class="pl-2">Préférences</h3>
+    {{form}}</div>
+    {% if config_form %}
+    <form class="border m-2" method="POST", action="#">
+    {% csrf_token %}
+    <span>Configuration générale</span>{{config_form}}
+    <button class="button" type="submit">Envoyer</button></form>
+    {% endif %}
+{% endblock %}

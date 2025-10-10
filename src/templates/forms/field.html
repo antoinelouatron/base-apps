@@ -1,0 +1,11 @@
+{% if field.use_fieldset %}
+  <fieldset>
+  {% if field.label %}{{ field.legend_tag }}{% endif %}
+{% else %}
+  {% if field.label %}{{ field.label_tag }}{% endif %}
+{% endif %}
+{% if field.help_text %}<i class="fa fa-question-circle help-btn hidden lg:inline" title="{{ field.help_text|safe }}"></i>
+<div class="helptext hidden"{% if field.auto_id %} id="{{ field.auto_id }}_helptext"{% endif %}>{{ field.help_text|safe }}</div>{% endif %}
+{{ field.errors }}
+{{ field }}
+{% if field.use_fieldset %}</fieldset>{% endif %}

@@ -1,0 +1,23 @@
+{% extends "agenda/timeline/base.html" %}
+{% block event %}
+<div class="inscription flex">
+    <div class="dark:bg-yellow-700 bg-yellow-200 shrink-0 w-6 flex items-center min-h-12 justify-center rounded-l-lg">
+        <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <div class="my-auto flex flex-col">
+    <span>{{event.label}} : le {{event.begin|date:"l j F H:i"}}.</span>
+    <span>{% if event.teacher == curr_user %}
+        {% if event.is_full %}
+        Avec {{event.attendants.all|join:", "}} ({{event.attendants.all|length}} inscrits)
+        {% else %}
+        en attente, {{event.attendants|length}}/{{event.max_students}} inscrits
+        {% endif %}
+    {% else %}
+        Avec {{event.teacher}}
+        {% if not event.is_full %}
+        Séance incomplète.
+        {% endif %}
+    {% endif %}</span>
+    </div>
+</div>
+{% endblock event %}

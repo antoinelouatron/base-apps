@@ -1,0 +1,10 @@
+<form id="delete-event-form" method="POST" action="">
+{% csrf_token %}
+<div class="confirm-text">
+Voulez-vous vraiment supprimer cet événement ?
+</div>
+<div class="text-center">
+    <input type="submit" value="Supprimer" class="button">
+    <button type="button" class="button close-modal">Annuler</button>
+</div>
+</form>

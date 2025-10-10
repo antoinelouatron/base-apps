@@ -1,0 +1,16 @@
+{% load dict_to_data %}
+{{ errors }}
+{% if errors and not fields %}
+<div>{% for field in hidden_fields %}{{ field }}{% endfor %}</div>
+{% endif %}
+{% for field, errors in fields %}
+<div {% with classes=field.css_classes %}class="form-field {{form.add_css_classes|dict_get:field.name}} {{ classes }}"{% endwith %}>
+  {{ field.as_field_group }}
+</div>
+  {% if forloop.last %}
+    {% for field in hidden_fields %}{{ field }}{% endfor %}
+  {% endif %}
+{% endfor %}
+{% if not fields and not errors %}
+  {% for field in hidden_fields %}{{ field }}{% endfor %}
+{% endif %}

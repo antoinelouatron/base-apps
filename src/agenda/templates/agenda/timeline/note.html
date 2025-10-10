@@ -1,0 +1,11 @@
+{% extends "agenda/timeline/base.html" %}
+{% block event %}
+<div class="event flex" data-eventid="{{event.target_event.pk}}" data-weekid="{{event.target_week.pk}}">
+    <div class="dark:bg-yellow-700 bg-yellow-200 shrink-0 w-6 flex items-center min-h-12 justify-center rounded-l-lg">
+        <i class="fas fa-exclamation-triangle"></i>
+    </div>
+    <div class="note-overlay animate-bounce my-auto cursor-pointer">
+    À faire pour le {{ event.date|date:"d/m" }}
+    </div>
+</div>
+{% endblock event %}

@@ -1,0 +1,18 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="m-2">
+<a href="{% url 'users:change_collegroups' %}">Modifier les groupes</a>
+</div>
+<div class="m-2 md:columns-2 lg:columns-3">
+    {% for cg in object_list %}
+    <div class="p-2 border text-center break-inside-avoid">
+    <h3>Groupe {{ cg.nb }}</h3>
+    <ul>
+    {% for scg in cg.studentcollegroup_set.all %}
+    <li>{{scg.user}}</li>
+    {% endfor %}
+    </ul>
+    </div>
+    {% endfor %}
+</div>
+{% endblock content %}

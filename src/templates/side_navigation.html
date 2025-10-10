@@ -1,0 +1,20 @@
+{% load media_tag %}
+<div class="grow shrink-0 basis-auto">
+{% for menu_list in all_menus %}
+{% if forloop.counter != 1 %}<div class="w-3/4 m-auto border border-current"></div>{% endif %}
+<div class="flex flex-col">
+    <h2 class="text-center text-2xl">{{menu_list.title}}</h2>
+    <ul class="flex flex-col items-center">
+        {% for menu in menu_list.visible %}
+        <li {{menu.attrs}}>
+            <a href="{{menu.url}}" class="text-lg{% if menu.active %} text-orange-700 dark:text-orange-300{% endif %}">{{menu.title}}</a>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endfor %}
+</div>
+<footer class="shrink-0 border-t p-1 text-center">
+<a href="{% media_url 'documents/a-propos.html' %}" class="mx-2">À propos</a>
+{% comment %} <a href="{% url 'blog:sequence_list' %}" class="mx-2">Blog</a> {% endcomment %}
+</footer>

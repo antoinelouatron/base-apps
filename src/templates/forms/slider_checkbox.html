@@ -1,0 +1,10 @@
+<slider class="switch relative inline-block w-15 h-8 pointer-events-none align-middle">
+    <input type="{{ widget.type }}" name="{{ widget.name }}"
+    {% if widget.value != None %} value="{{ widget.value|stringformat:'s' }}"{% endif %}
+    {% include "django/forms/widgets/attrs.html" %}>
+    <span class="slider absolute cursor-pointer top-0 left-0 right-0 bottom-0 duration-300
+    bg-gray-500 before:absolute before:h-slider
+    before:w-slider before:bg-white
+    before:duration-300 before:left-1.5 before:bottom-1
+    peer-checked:bg-blue-400 peer-checked:before:translate-x-slider"></span>
+</slider>

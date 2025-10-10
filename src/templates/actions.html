@@ -1,0 +1,14 @@
+<div class="rounded-full button-color p-2 size-10 text-center m-2 fixed top-1 
+right-1 2xl:right-[calc(4px_+_(100%_-_1536px)_/_2)] modal-btn z-50"
+data-modal-target="#staff-actions", data-modal-transition="true">
+    <i class="fa fa-plus fa-lg pointer-events-none"></i>
+</div>
+<ol id="staff-actions"
+class="fixed w-32 translate-x-32 right-0 top-0 [&.open]:translate-x-0 [&.out]:translate-x-32
+transition bg-surface1 p-2 opacity-0 [&.open]:opacity-100 z-50
+2xl:right-[calc(4px_+_(100%_-_1536px)_/_2)]">
+    <li class="relative text-right close-modal"><i class="fa fa-times fa-lg"></i></li>
+    {% for action in staff_actions %}
+        <li>{{ action }}</li>
+    {% endfor %}
+</ol>

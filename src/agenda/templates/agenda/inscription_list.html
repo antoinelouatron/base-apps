@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="prose dark:prose-invert indent mb-4 p-2 mx-auto">
+    <p>Les créneaux suivants sont disponibles sur inscription. Vous pouvez vous inscrire ou vous désinscrire
+        en cliquant sur le bouton correspondant.</p>
+    <p class="text-lg">Les inscriptions sont ouvertes jusqu'à 24H avant le début
+        de la séance. Après ce délai vous ne pouvez plus vous désinscrire et vous
+        devez trouver un remplaçant en cas d'empêchement.
+    </p>
+    <span class="modal-btn underline text-lg" data-modal-target="#modalite-modal">Modalité des épreuves</span>
+</div>
+{% with modal_id="modalite-modal" modal_body_tmpl="agenda/components/modalite.html" modal_title="Modalités" modal_footer_tmpl="agenda/components/modalite_footer.html"%}
+{% include "components/modal.html" %}
+{% endwith %}
+{% if user.teacher %}
+<div class="lg:hidden">
+<a href="{% url 'agenda:inscription:manage' %}">Ajouter/gérer</a> mes séances.
+</div>
+{% endif %}
+<div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+{% for date, teacher in inscriptions.items %}
+    {% for group in teacher.values %}
+    {{ group.as_widget.render }}
+    {% endfor %}
+{% endfor %}    
+</div>
+<div class="mt-2 flex justify-center">
+    <span class="button" id="see-all">Séances passées</span>
+</div>
+{% endblock %}

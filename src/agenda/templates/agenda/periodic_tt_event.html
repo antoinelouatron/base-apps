@@ -1,0 +1,26 @@
+{% spaceless %}
+{% load hour_to_percent %}
+{% load l10n %}
+{% load math_tag %}
+{% load dict_to_data %}
+
+<div class="border absolute flex flex-wrap flex-col justify-center items-center event {{ev.subject}} overlap-{{ev.overlap_nb}} {% event_classes ev ev.overlap_nb ev.position %}"
+    {% dict_to_data ev.to_json %}
+    style="top:{% to_rem ev.beghour %}rem;
+           height:{% to_rem ev.endhour ev.beghour %}rem;
+           width:{% divide 1 ev.overlap_nb percent="true"%};
+           left: {% divide ev.position ev.overlap_nb percent="true" %}">
+    <div class="event-label" title="">{{ev.label}}</div>
+    <div class="classroom">s. {{ev.classroom}}</div>
+    <div class="teacher-name">{% for teach in ev.teachers %} {{teach.display_name}} {% endfor %}</div>
+    <div class="attendances-{{ev.occurences|length}}">
+    {% for occ in ev.attendances %}
+    <div class="attendance">{{occ}}</div>
+    {% endfor %}
+    </div>
+    <div class="event-tooltip">
+        <div class="tt-teacher-name" title="{% for teach in ev.teachers %}{{teach.display_name}} {% endfor %}"></div>
+        <div class="tt-attendances" title="{% for occ in ev.occurences %}{{occ.groups}} {% endfor %}"></div>
+    </div>
+</div>
+{% endspaceless %}

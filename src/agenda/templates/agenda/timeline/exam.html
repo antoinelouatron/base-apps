@@ -1,0 +1,16 @@
+{% extends "agenda/timeline/base.html" %}
+{% block event %}
+<div class="flex">
+    <div class="dark:bg-green-700 bg-green-200 shrink-0 w-6 flex items-center min-h-12 justify-center rounded-l-lg">
+        <i class="fas fa-file"></i>
+    </div>
+    <div class="p-2">{{event.date|date:"d/m"}}, {% if event.category == "DM" %}
+    {% if is_teacher %}rendu du{% else %}rendre le{% endif %}{% endif %}
+        {% if not event.publication.is_future %}
+        <a href="{{event.publication.get_absolute_url}}">{{event.label}}</a>
+        {% else %}
+        {{event.label}}
+        {% endif %}
+    </div>
+</div>
+{% endblock event %}

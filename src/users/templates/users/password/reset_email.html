@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<title>Réinitialisation du mot de passe sur {{ site_name }}</title>
+<style>
+  h3 {text-align: center; margin-top: 40px;}
+  .content {border-radius: 10px; padding: 10px; max-width: 500px;
+  box-shadow: 0px 0px 6px #ccc;
+  margin: auto;}
+  .link-button {
+  text-decoration: none;
+  color: white;
+  background-color: blue;
+  padding: 15px;
+  border-radius: 5px;
+  box-shadow: 3px 3px 3px #ccc;
+  }
+  .link-container {display: flex; align-items: center; justify-content: center; height: 70px;}
+  .footer {margin-top: 10px; color: rgb(0,0,0 , .8)}
+</style>
+</head>
+<body>
+<h3>Demande de réinitialisation</h3>
+<div class="content">
+<p>Nous avons reçu une demande de réinitialisation de mot de passe pour
+le compte sur {{ site_name }} liée à cette adresse.
+Aucun changement n'est intervenu sur votre compte pour l'instant.
+</p>
+
+<p>Vous pouvez réinitialiser votre mot de passe en cliquant sur le lien suivant.</p>
+<div class="link-container"><a href="{{ protocol}}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}" class="link-button">Réinitialiser mon mot de passe</a></div>
+<p>Si le lien ne fonctionne pas, copiez-collez l'adresse suivante dans votre navigateur :</p>
+<p>{{ protocol}}://{{ domain }}{% url 'password_reset_confirm' uidb64=uid token=token %}</p>
+<p>Ce lien expirera dans 24H.</p>
+<p>Si vous n'avez pas demandé cette réinitialisation, vous pouvez ignorer cet e-mail.</p>
+</div>
+<div class="footer">
+<p>En cas de problème, n'hésitez pas à écrire à admin@{{domain}}</p>
+</div>
+</body>
+</html>

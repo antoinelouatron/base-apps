@@ -1,0 +1,23 @@
+{% load l10n %}
+{% load humanize %}
+{% load tz %}
+<div class="bg-surface1 m-2 text-center{% if inscr.has_user %} border border-green-400{% endif %}">
+    <h5>{{inscr.label}} avec {{inscr.teacher}}{% if inscr.locked %} (clos){% endif %}</h5>
+    <span>Le {{inscr.begin}} jusqu'à
+        {{inscr.end|time:"H:i"}} ({{inscr.max_students}} places,
+        {{inscr.begin|naturaltime}})
+    </span>
+    <h5>Étudiants inscrits:</h5>
+    <ul>
+        {% for stud in inscr.attendants.all %}
+        <li class="pl-4{% if stud == request.user %} underline{% endif %}">{{stud}}</li>
+        {% endfor %}
+    </ul>
+    {% if not inscr.locked %}
+        {% if inscr.has_user %}
+        <span class="button inscription cancel" data-target="{{inscr.pk}}">Se désinscrire</span>
+        {% elif not inscr.is_full %}
+        <span class="button inscription add" data-target="{{inscr.pk}}">S'inscrire</span>
+        {% endif %}
+    {% endif %}
+</div>

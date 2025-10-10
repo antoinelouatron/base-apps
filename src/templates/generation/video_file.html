@@ -1,0 +1,12 @@
+{% load media_url %}
+<video controls preload="metadata"{% if poster %} poster="{% media_url poster %}"{% endif %}
+class="block m-auto w-5/6 mt-4">
+    {% for source in sources %}
+    <source src="{% media_url source.src %}" type="{{source.type}}"/>
+    {% endfor %}
+    {% if sources %}
+    <p>Votre navigateur ne permet pas la lecture de vidéo. Mais vous pouvez
+        <a href="{% media_url sources.0.src%}">télécharger</a> celle ci.
+    </p>
+    {% endif %}
+</video>

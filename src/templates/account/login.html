@@ -1,0 +1,13 @@
+{% extends "users/password/base.html" %}
+{% block style %}
+{{ block.super }}
+<style>
+#content {
+    max-width: 80ch;
+    margin: auto;
+}
+</style>
+{% endblock style %}
+{% block content %}
+<h3 class="mx-auto mb-2 text-lg">Identifiez vous pour accéder au reste du contenu.</h3>
+{% include "users/login_form.html" %}{% endblock %}
