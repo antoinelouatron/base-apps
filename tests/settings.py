@@ -1,6 +1,7 @@
+from pathlib import Path
 from core.base_settings import *  # noqa
 
-ROOT_URLCONF = "core.base_urls"
+ROOT_URLCONF = "urls"
 DEFAULT_PROTOCOL = "http"
 ALLOWED_HOSTS = ["*"]
 DATABASES = {
@@ -24,6 +25,7 @@ INSTALLED_APPS += [
     "bulkimport",
     "utils",
     "quill_editor",
+    "base_archives"
 ]
 
 DEBUG = False
@@ -73,6 +75,11 @@ WEBPACK_LOADER = {
         "BUNDLE_DIR_NAME": ""
     },
 }
+AGENDA_ICAL_FILE = BASE_DIR / "agenda" / "gouv.ical.ics"
+# directory where db backups are stored
+BACKUP_PATH = Path(__file__).parent / "backups"
+SENDFILE_ROOT = BACKUP_PATH.parent
+SENDFILE_BACKEND = "django_sendfile.backends.development"
 
 LOGGING = {
     "version": 1,

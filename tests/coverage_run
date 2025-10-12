@@ -1,3 +1,3 @@
 #!/bin/bash
-coverage run manage.py test agenda bulkimport core quill_editor users utils
+coverage run manage.py test agenda bulkimport core quill_editor users utils base_archives
 coverage html -d ./htmlcov

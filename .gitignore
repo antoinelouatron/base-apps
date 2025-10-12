@@ -9,6 +9,7 @@ TODO
 *fixtures*
 .vscode/
 
+
 #migrations
 *migrations*
 
@@ -19,4 +20,5 @@ activate*
 tests/htmlcov/
 tests/.tox/
 tests/.env
+tests/backup/
 

@@ -100,13 +100,6 @@ USE_I18N = True
 USE_TZ = True
 
 
-# Static files (CSS, JavaScript, Images)
-# https://docs.djangoproject.com/en/5.0/howto/static-files/
-# STATIC_BASE = BASE_DIR / "static"
-# STATICFILES_DIRS = [STATIC_BASE]
-# STATICFILE_FINDER = ("django.contrib.staticfiles.finders.FileSystemFinder",
-#                      "django.contrib.staticfiles.finders.AppDirectoriesFinder")
-
 STATIC_URL = "static/"
 MEDIAFILES_URL = "/media/"
 PROTECTED_URL = "/documents/protected/"
@@ -114,39 +107,7 @@ ICON_URL = "/media/icon/"
 
 ASSETS_MAP = BASE_DIR / "assets-map.json"
 
-# MEDIA_ROOT = BASE_DIR / "media"
-# relative to MEDIA_ROOT
-# DOCUMENTS_PATH = "documents"
-# PROTECTED_PATH = "protected"
-
-# static chapters and json files
-# STATIC_HTML_ROOT = STATIC_BASE / "www"
-# STATIC_HTML_URL = "/static/www/"
-# FILE_UPLOAD_PERMISSIONS = 0o644
-# BACKUP_PATH = MEDIA_ROOT / "protected" / "archives" # store backup files in protected folder
-
-# COLLES_PDF_PATH = MEDIA_ROOT / "protected" / "colles"
-
-#sendfile
-# SENDFILE_BACKEND = 'django_sendfile.backends.nginx'
-# SENDFILE_ROOT = MEDIA_ROOT / "protected"
-# SENDFILE_URL = "/media/protected"
-
-# Default primary key field type
-# https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
-
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-#######################
-# Email configuration #
-#######################
-
-# SERVER_EMAIL = "noreply@louatron.fr"
-# DEFAULT_FROM_EMAIL = "noreply@louatron.fr"
-# ADMINS = [
-#     ('antoine', 'antoine.louatron@gmail.com'),
-# ]
-# MANAGERS = ADMINS
 
 
 
@@ -155,7 +116,7 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 #########################
 
 AGENDA_OFFICIAL_ICAL_URL = "https://fr.ftp.opendatasoft.com/openscol/fr-en-calendrier-scolaire/Zone-B.ics"
-AGENDA_ICAL_FILE = BASE_DIR / "agenda" / "gouv.ical.ics"
+# AGENDA_ICAL_FILE = BASE_DIR / "agenda" / "gouv.ical.ics"
 
 
 QUILL_CONFIGS = {
@@ -204,17 +165,17 @@ QUILL_CONFIGS = {
 # Archive and backup settings #
 ##############################
 
-# DB_BACKUP_COMMANDS = {
-#     "django.db.backends.postgresql" : {
-#         "command": "/usr/local/pgsql/bin/pg_dump",
-#         "base": "-F c", # optional
-#         "USER": "-U {USER}",
-#         "HOST": "-h {HOST}",
-#         "PORT": "-p {PORT}",
-#         "NAME": "-d {NAME}",
-#         "output": "-f {FILE}",
-#     }
-# }
+DB_BACKUP_COMMANDS = {
+    "django.db.backends.postgresql" : {
+        "command": "/usr/local/pgsql/bin/pg_dump",
+        "base": "-F c", # optional
+        "USER": "-U {USER}",
+        "HOST": "-h {HOST}",
+        "PORT": "-p {PORT}",
+        "NAME": "-d {NAME}",
+        "output": "-f {FILE}",
+    }
+}
 
 # Logging
 # LOGGING = {
