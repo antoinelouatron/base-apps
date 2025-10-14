@@ -21,8 +21,10 @@ def get_setting(setting, default=None, cast_type=str):
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(get_setting(
     "BASE_DIR",
-    Path(__file__).resolve().parent.parent
+    Path(__file__).resolve().parent.parent,
+    lambda p: Path(p).resolve()
 ))
+TEST_BASE_DIR = BASE_DIR
 
 SECRET_KEY = get_setting("SECRET_KEY")
 
@@ -73,8 +75,8 @@ LOGIN_URL = "/login"
 
 AUTH_PASSWORD_VALIDATORS = []
 
-LOGIN_REDIRECT_URL = "/profil/"
-LOGOUT_REDIRECT_URL = "/login/"
+LOGIN_REDIRECT_URL = "/"
+LOGOUT_REDIRECT_URL = "/"
 PASSWORD_RESET_TIMEOUT = 60 * 60 * 24 # 1 day
 
 
@@ -102,14 +104,11 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 MEDIAFILES_URL = "/media/"
-PROTECTED_URL = "/documents/protected/"
 ICON_URL = "/media/icon/"
 
 ASSETS_MAP = BASE_DIR / "assets-map.json"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
-
-
 
 #########################
 # App specific settings #
@@ -141,24 +140,6 @@ QUILL_CONFIGS = {
         },
         #'formats': ["", "formula"],
     },
-    "colle_comment": {
-        "theme": "snow",
-        "modules": {
-            "toolbar": [
-                [
-                    "bold",
-                    "italic",
-                    "underline",
-                    "blockquote",
-                ],
-            ],
-            "history": {
-                "delay": 1000,
-                "maxStack": 50,
-                "userOnly": True
-            }
-        }
-    }
 }
 
 ##############################

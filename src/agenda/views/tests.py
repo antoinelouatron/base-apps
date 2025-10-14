@@ -4,6 +4,7 @@ date: 2024-03-02
 import datetime
 from pathlib import Path
 
+from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.utils import timezone
 
@@ -309,12 +310,6 @@ class TestApi(TestCase, UsersAndWeeks):
         ev1.attendants.add(self.users[0])
         am.Note.objects.create(target_week=week, comment="test",
             target_event=ev1, date=today)
-        # add an Exam
-        # import content.models as cm
-        # cm.DevoirPublication.objects.create(title="DS 1", date=datetime.date.today())
-        # resp = url.test()
-        # self.assertIn("timeline", resp.context)
-        # self.assertEqual(sum(len(v["objects"]) for v in resp.context["timeline"]), 4)
         # check all timeline events have template
         for month in resp.context["timeline"]:
             for ev in month["objects"]:
@@ -607,7 +602,7 @@ class TestEventManage(TestCase, UsersAndWeeks):
         self.assertFalse(resp.context["form"].is_valid())
         #same code as in forms.tests
         self.create_teachers(TEACHERS)
-        fpath = Path(__file__).parent / ".." / "fixtures" / "edt.json"
+        fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "edt.json"
         self.assertTrue(fpath.exists())
         level = um.get_default_level(instance=True)
         with open(fpath, "rb") as upl_file:
@@ -650,7 +645,7 @@ class TestEventManage(TestCase, UsersAndWeeks):
         url2.status = 200
         url2.set_user(self.staff_user)
         self.create_teachers(TEACHERS)
-        fpath = Path(__file__).parent / ".." / "fixtures" / "edt.json"
+        fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "edt.json"
         self.assertTrue(fpath.exists())
         level = um.get_default_level(instance=True)
         with open(fpath, "rb") as upl_file:
@@ -686,7 +681,7 @@ class TestEventManage(TestCase, UsersAndWeeks):
         url.status = 200
         resp = url.test()
         self.assertFalse(resp.context["form"].is_valid())
-        fpath = Path(__file__).parent / ".." / "fixtures" / "ds-pt.csv"
+        fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "ds-pt.csv"
         self.assertTrue(fpath.exists())
         #create weeks for these events
         gen = am.HolidayGenerator()

@@ -21,4 +21,5 @@ tests/htmlcov/
 tests/.tox/
 tests/.env
 tests/backup/
+tests/.coverage
 

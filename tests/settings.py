@@ -28,6 +28,9 @@ INSTALLED_APPS += [
     "base_archives"
 ]
 
+LOGIN_REDIRECT_URL = "/profil/"
+LOGOUT_REDIRECT_URL = "/login/"
+
 DEBUG = False
 
 TEST_RUNNER = "dev.test_utils.DjangoRunner"

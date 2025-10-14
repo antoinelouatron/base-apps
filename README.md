@@ -14,10 +14,11 @@ De manière optionnelle on peut également définir
 ```
 DJANGO_BASE_DIR="root_directory_for_current_app"
 ```
+Ce setting est défini dans `core.base_settings` mais non utilisé.
 
 ## Utilisation
 
-Au minimum, importer core.base_settings dans les settings principaux
+Au minimum, importer `core.base_settings` dans les settings principaux
 et ajouter
 
 ```

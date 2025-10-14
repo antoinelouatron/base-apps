@@ -4,11 +4,11 @@ date: 2024-04-10
 import datetime
 from pathlib import Path
 
+from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
 import agenda.forms as af
 import agenda.models as am
-import agenda.models.attendance as at
 from dev.test_utils import TestCase
 from dev.test_data import CreateUserMixin
 import users.models as um
@@ -102,12 +102,14 @@ def create_subjects(level):
 
 class TestImportForms(TestCase, CreateUserMixin):
 
+    base_dir = settings.TEST_BASE_DIR / "agenda"
+
     def setUp(self):
         #self.create_students(16)
         self.create_teachers(TEACHERS)
     
     def test_import_edt(self):
-        fpath = Path(__file__).parent / ".." / "fixtures" / "edt.json"
+        fpath = self.base_dir / "fixtures" / "edt.json"
         self.assertTrue(fpath.exists())
         level = um.Level.objects.create(name="3e")
         self.create_students(16, level=level)
@@ -153,7 +155,7 @@ class TestImportForms(TestCase, CreateUserMixin):
     
     def test_import_colle_events(self):
         self.create_students(16)
-        fpath = Path(__file__).parent / ".." / "fixtures" / "colles.csv"
+        fpath = self.base_dir / "fixtures" / "colles.csv"
         self.assertTrue(fpath.exists())
         with open(fpath, "rb") as upl_file:
             upl_dict = {"import_file": InMemoryUploadedFile(
