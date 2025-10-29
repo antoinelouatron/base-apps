@@ -19,7 +19,7 @@ class LoadAllData(TestCase, CreateUserMixin):
         return super().setUp()
 
     def load_users(self):
-        base_path = settings.BASE_DIR / "users" / "fixtures"
+        base_path = settings.TEST_BASE_DIR / "users" / "fixtures"
         url = TestURL(self, "import", "users", status=302)
         url.set_user(self.staff_user)
         fpath = base_path / "teachers.json"
@@ -54,7 +54,7 @@ class LoadAllData(TestCase, CreateUserMixin):
             url.test()
     
     def load_EDT(self):
-        fpath = settings.BASE_DIR / "agenda" / "fixtures" / "edt.json"
+        fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "edt.json"
         self.assertTrue(fpath.exists())
         level = um.get_default_level(instance=True)
         create_subjects(level)
@@ -73,7 +73,7 @@ class LoadAllData(TestCase, CreateUserMixin):
             form.save()
     
     def load_colles(self, planning=True):
-        fpath = settings.BASE_DIR / "agenda" / "fixtures" / "colles.csv"
+        fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "colles.csv"
         self.assertTrue(fpath.exists())
         with open(fpath, "rb") as upl_file:
             upl_dict = {"import_file": InMemoryUploadedFile(
@@ -84,7 +84,7 @@ class LoadAllData(TestCase, CreateUserMixin):
             form = af.ColleEventImport(data, upl_dict)
             self.assertTrue(form.is_valid())
             form.save()
-        fpath = settings.BASE_DIR / "agenda" / "fixtures" / "scope-pt.csv"
+        fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "scope-pt.csv"
         if not planning:
             return
         for nb in range(3, 26):

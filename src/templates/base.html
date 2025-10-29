@@ -1,5 +1,5 @@
 {% spaceless %}{% load static%}{% load breakpoints %}
-{% load render_bundle from webpack_loader %}
+{% load django_vite %}
 {% load media_tag %}
 <!DOCTYPE html>
 <html lang="fr" class="scroll-smooth">
@@ -43,9 +43,11 @@ Object.assign(ns.debug, ns.django.debug);
 delete ns.django.debug;
 </script>
 {% endif %}
+<script src="{% static 'js/htmx.min-2.0.7.js' %}"></script>
+{% vite_hmr_client %}
 {% block bundles %}
 {% for script in script_list %}
-{% render_bundle script attrs="defer" %}
+{% vite_asset script %}
 {% endfor %}
 {% endblock bundles %}
 {% if rich_results %}

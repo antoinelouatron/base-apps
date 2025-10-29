@@ -7,9 +7,10 @@ from typing import Any
 
 from django import forms, urls
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.db import transaction
-from django.http import HttpResponseNotAllowed, HttpResponseRedirect, QueryDict
+from django.http import QueryDict
 from django.shortcuts import redirect
 from django.views.generic.edit import UpdateView
 
@@ -105,7 +106,7 @@ class SeeAsView(UserPassesTestMixin, ListView):
         ctx["referer"] = self.get_referer()
         return ctx
 
-class AccountView(LoginRequiredMixin, TemplateView):
+class AccountView(LoginRequiredMixin, FormView):
     """
     Account view
     """
@@ -114,16 +115,22 @@ class AccountView(LoginRequiredMixin, TemplateView):
     SCRIPTS = ["account"]
     PAGE_TITLE = "Mon compte"
     raise_exception = True
+    form_class = PasswordChangeForm
         
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         instance, _ = um.UserPref.objects.get_or_create(user=self.request.user)
-        context["form"] = users.forms.UserPrefForm(instance=instance)
-        # if self.request.user.is_superuser:
-        #     context["config_form"] = content.forms.ContentConfigForm(
-        #         instance=self.request.content_ctx.config)
+        context["pref_form"] = users.forms.UserPrefForm(instance=instance)
         if self.request.user.student:
             context["group"] = um.ColleGroup.objects.filter(studentcollegroup__user=self.request.user).first()
+        subjects = um.Subject.objects.all()
+        subjects = um.prepare_qs_for_component(subjects)
+        levels = um.Level.objects.all()
+        levels = um.prepare_qs_for_component(levels)
+        context["user_roles"] = self.request.user.roles.display_data(
+            subjects=subjects,
+            levels=levels,
+        )
         return context
     
     def get_all_menus(self, ctx):
@@ -146,14 +153,25 @@ class AccountView(LoginRequiredMixin, TemplateView):
         }
         return ns
     
-    def post(self, request, *args, **kwargs):
-        # if request.user.is_superuser:
-        #     form = content.forms.ContentConfigForm(request.POST, instance=request.content_ctx.config)
-        #     if form.is_valid():
-        #         form.save()
-        #         messages.info(request, "Configuration enregistrée.")
-        #     return HttpResponseRedirect(request.path)
-        return HttpResponseNotAllowed(["GET"])
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs["user"] = self.request.user
+        return kwargs
+    
+    def get_form(self, form_class=None):
+        form = super().get_form(form_class)
+        form.add_css_classes = {
+            "old_password": "flex m-2 flex-wrap justify-center gap-2",
+            "new_password1": "flex m-2 flex-wrap justify-center gap-2",
+            "new_password2": "flex m-2 flex-wrap justify-center gap-2",
+        }
+        form.label_suffix = ""
+        return form
+    
+    def form_valid(self, form):
+        form.save()
+        messages.success(self.request, "Mot de passe changé avec succès.")
+        return redirect(urls.reverse("users:account"))
 
 class UserListJson(LoginRequiredMixin, JSONResponseMixin, View):
     raise_exception = True

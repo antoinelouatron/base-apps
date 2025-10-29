@@ -389,16 +389,22 @@ django = "*"
 docs = ["sphinx", "sphinx_rtd_theme"]
 
 [[package]]
-name = "django-webpack-loader"
-version = "3.2.1"
-description = "Transparently use webpack with django"
+name = "django-vite"
+version = "3.1.0"
+description = "Integration of Vite in a Django project."
 optional = false
 python-versions = "*"
 groups = ["main"]
 files = [
-    {file = "django_webpack_loader-3.2.1-py2.py3-none-any.whl", hash = "sha256:b7e505bcdf7af8f75433f13d54010e0a95c61a8b80890a700a598602656e09bf"},
-    {file = "django_webpack_loader-3.2.1.tar.gz", hash = "sha256:d4bfaca9a640f087e7feeeb2ca6afd3d0a644bce3925b3d430448989c1673774"},
+    {file = "django_vite-3.1.0-py3-none-any.whl", hash = "sha256:4e46572bd6b1ce70784be129205dc2ffcbc7a3c19fea50bebfb72b327bbde5fc"},
+    {file = "django_vite-3.1.0.tar.gz", hash = "sha256:8b4ffe4a9fa81ff568bfb195e74dde8694aaf13fd4b656ae60bf59cce08b85e8"},
 ]
+
+[package.dependencies]
+Django = ">=3.2"
+
+[package.extras]
+dev = ["black"]
 
 [[package]]
 name = "djangorestframework"
@@ -1137,4 +1143,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4"
-content-hash = "17352b93e781efe9aaa074940d870ea19304e0eb7a20f6cadc1fc8c3e608e948"
+content-hash = "21481688a9b24d39666d0778497759d886191689bb3bb137cae976cb33c2d483"

@@ -48,23 +48,7 @@ MIDDLEWARE = [
     "users.middlewares.SeeAsMiddleware",
 ]
 
-TEMPLATES = [
-    {
-        "BACKEND": "django.template.backends.django.DjangoTemplates",
-        "DIRS": [BASE_DIR / "templates"],
-        "APP_DIRS": True,
-        "OPTIONS": {
-            "context_processors": [
-                "django.template.context_processors.debug",
-                "django.template.context_processors.request",
-                "django.contrib.auth.context_processors.auth",
-                "django.contrib.messages.context_processors.messages",
-                "users.context_processors.set_prefs",
-                "core.context_processors.size",
-            ],
-        },
-    },
-]
+
 FORM_RENDERER = "utils.forms.renderer.CustomRenderer"
 
 AUTHENTICATION_BACKENDS = [
@@ -72,12 +56,15 @@ AUTHENTICATION_BACKENDS = [
     "users.emailbackend.EMailBackend",
 ]
 
-WEBPACK_LOADER = {
-    "DEFAULT": {
-        "STATS_FILE": BASE_DIR / "webpack-stats.json",
-        "BUNDLE_DIR_NAME": ""
-    },
+DJANGO_VITE = {
+  "default": {
+    "dev_mode": False,
+    "manifest_path": BASE_DIR / ".." / "tests" /"manifest.json",
+    "static_url_prefix": "js/"  # must match the `base` option in vite.config.js
+  }
 }
+
+
 AGENDA_ICAL_FILE = BASE_DIR / "agenda" / "gouv.ical.ics"
 # directory where db backups are stored
 BACKUP_PATH = Path(__file__).parent / "backups"

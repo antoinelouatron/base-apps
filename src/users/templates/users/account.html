@@ -1,17 +1,22 @@
 {% extends 'base.html' %}
 
 {% block content %}
-<h1 class="pl-2 text-lg">Mon compte</h1>
-{{user.roles.roles}}
-{% if user.student %}Groupe de colle {{group.nb}}
-{% endif %}
-    <div id="user-prefs">
-    <h3 class="pl-2">Préférences</h3>
-    {{form}}</div>
-    {% if config_form %}
-    <form class="border m-2" method="POST", action="#">
+<h1 class="pl-2 text-xl">Mon compte</h1>
+Votre profil est associé aux rôles suivants :
+<ul class="pl-8 mb-2">{% for role in user_roles %}
+    <li class="list-disc">{{ role.role }}</li>
+{% endfor %}</ul>
+{% if user.student %}Groupe de colle {{group.nb}}{% endif %}
+<div id="user-prefs">
+<h1 class="pl-2 text-xl mt-2">Préférences</h1>
+{{pref_form}}
+</div>
+<div id="change-password" class="mt-4">
+<h1 class="pl-2 text-xl mt-2">Changer le mot de passe</h1>
+<form method="post" class="p-4 border rounded">
     {% csrf_token %}
-    <span>Configuration générale</span>{{config_form}}
-    <button class="button" type="submit">Envoyer</button></form>
-    {% endif %}
+    {{ form }}
+    <div class="w-50 m-auto"><button type="submit" class="button mr-0">Changer le mot de passe</button></div>
+</form>
+</div>
 {% endblock %}

@@ -49,9 +49,10 @@ INSTALLED_APPS = [
     "django.contrib.humanize",
     "django.contrib.sitemaps",
     "django.forms", # to find form templates
-    "webpack_loader",
+    #"webpack_loader",
     "rest_framework",
     "rest_framework.authtoken",
+    "django_vite",
 ]
 
 CACHES = {
@@ -65,6 +66,24 @@ CACHES = {
     }
 }
 SESSION_ENGINE = "django.contrib.sessions.backends.cached_db"
+
+TEMPLATES = [
+    {
+        "BACKEND": "django.template.backends.django.DjangoTemplates",
+        "DIRS": [BASE_DIR / "templates"],
+        "APP_DIRS": True,
+        "OPTIONS": {
+            "context_processors": [
+                "django.template.context_processors.debug",
+                "django.template.context_processors.request",
+                "django.contrib.auth.context_processors.auth",
+                "django.contrib.messages.context_processors.messages",
+                "users.context_processors.set_prefs",
+                "core.context_processors.size",
+            ],
+        },
+    },
+]
 
 # base login config
 LOGIN_URL_NAME = "account_login"

@@ -31,14 +31,26 @@ class AssetsLoader():
                 data = json.load(f)
             self.scripts = data.get("SCRIPTS", {})
             self.styles = data.get("STYLES", {})
+            self.aliases = data.get("ALIASES", {})
         except Exception as e:
             logger.warning("Could not load assets map from {}: {}".format(fname, e))
 
+    def _resolve(self, name: str) -> str:
+        """
+        Resolve aliases in the given name.
+
+        Used for dev serving with vite.
+        """
+        for alias, path in self.aliases.items():
+            if name.startswith(alias):
+                return path + name[len(alias):]
+        return name
+
     def get_script(self, name):
-        return self.scripts.get(name)
+        return self._resolve(self.scripts.get(name))
 
     def get_style(self, name):
-        return self.styles.get(name)
+        return self._resolve(self.styles.get(name))
 
 _loader = AssetsLoader()
 
