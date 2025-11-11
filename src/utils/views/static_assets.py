@@ -3,6 +3,7 @@ Created on Thu Mar  5 12:18:46 2015
 """
 
 import collections.abc
+import json
 import logging
 
 from django.conf import settings
@@ -26,14 +27,19 @@ class AssetsLoader():
         if fname is None:
             fname = settings.ASSETS_MAP
         try:
-            import json
             with open(fname, "r") as f:
                 data = json.load(f)
             self.scripts = data.get("SCRIPTS", {})
             self.styles = data.get("STYLES", {})
-            self.aliases = data.get("ALIASES", {})
         except Exception as e:
             logger.warning("Could not load assets map from {}: {}".format(fname, e))
+        try:
+            with open(settings.VITE_ALIAS_MAP, "r") as f:
+                self.aliases = json.load(f)
+        except Exception as e:
+            logger.warning("Could not load vite alias map from {}: {}".format(
+                settings.VITE_ALIAS_MAP, e))
+            self.aliases = {}
 
     def _resolve(self, name: str) -> str:
         """

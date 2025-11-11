@@ -1,6 +1,6 @@
 [project]
 name = "base_sites"
-version = "1.0.1b1"
+version = "1.0.1b2"
 description = "Applications de base pour la construction d'autres sites plus complets"
 authors = [
     {name = "Antoine Louatron",email = "antoine@louatron.fr"}
