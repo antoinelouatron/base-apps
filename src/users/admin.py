@@ -18,6 +18,9 @@ class MyUserAdmin(UserAdmin):
     def mark_active(self, request, queryset):
         queryset.update(is_active=True)
     
+    def remove_student(self, request, queryset):
+        queryset.update(student=False)
+    
 
 admin.site.register(User, MyUserAdmin)
 
