@@ -10,7 +10,7 @@ class MyUserAdmin(UserAdmin):
     fieldsets = UserAdmin.fieldsets + (
         (None, {"fields": ("title", "teacher", "student")}),
     )
-    actions = ["mark_active", "mark_inactive"]
+    actions = ["mark_active", "mark_inactive", "remove_student"]
 
     def mark_inactive(self, request, queryset):
         queryset.update(is_active=False)
