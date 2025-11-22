@@ -251,7 +251,7 @@ class Roles():
             AtomicRole.STUDENT: {},
             AtomicRole.TEACHER: {},
             AtomicRole.COLLEUR: {},
-            AtomicRole.REF_TEACHER: None, # ou pk de Level
+            AtomicRole.REF_TEACHER: {} # levels
         }
     
     def _cached_property(self, name, qs, atomic_role):
@@ -295,6 +295,14 @@ class Roles():
             levels.add(subject.level)
         return list(levels)
 
+    @property
+    def ref_teacher_levels(self):
+        return self._cached_property(
+            "ref_teacher_levels",
+            Level.objects.all(),
+            AtomicRole.REF_TEACHER
+        )
+
     def __getitem__(self, role: str):
         """
         Get the role by its name.
@@ -308,10 +316,10 @@ class Roles():
             yield AtomicRole.create(secretary=True)
         if self.roles[AtomicRole.SCHOOL_ADMIN]:
             yield AtomicRole.create(school_admin=True)
-        if self.roles[AtomicRole.REF_TEACHER] is not None:
+        for level in self.roles[AtomicRole.REF_TEACHER]:
             yield AtomicRole.create(
                 ref_teacher=True,
-                level=self.roles[AtomicRole.REF_TEACHER]
+                level=level
             )
         for level in self.roles[AtomicRole.STUDENT]:
             if self.roles[AtomicRole.STUDENT][level]:
@@ -336,10 +344,8 @@ class Roles():
             self.roles[AtomicRole.SCHOOL_ADMIN] = True
         elif role.role in (AtomicRole.TEACHER, AtomicRole.COLLEUR):
             self.roles[role.role][role.subject] = True
-        elif role.role == AtomicRole.STUDENT:
-            self.roles[AtomicRole.STUDENT][role.level] = True
-        elif role.role == AtomicRole.REF_TEACHER:
-            self.roles[AtomicRole.REF_TEACHER] = role.level
+        elif role.role in (AtomicRole.STUDENT, AtomicRole.REF_TEACHER):
+            self.roles[role.role][role.level] = True
     
     def remove(self, role: AtomicRole):
         """
@@ -352,12 +358,9 @@ class Roles():
         elif role.role in (AtomicRole.TEACHER, AtomicRole.COLLEUR):
             if str(role.subject) in self.roles[role.role]:
                 del self.roles[role.role][str(role.subject)]
-        elif role.role == AtomicRole.STUDENT:
-            if str(role.level) in self.roles[AtomicRole.STUDENT]:
-                del self.roles[AtomicRole.STUDENT][str(role.level)]
-        elif role.role == AtomicRole.REF_TEACHER:
-            if self.roles[AtomicRole.REF_TEACHER] == str(role.level):
-                self.roles[AtomicRole.REF_TEACHER] = None
+        elif role.role in (AtomicRole.STUDENT, AtomicRole.REF_TEACHER):
+            if str(role.level) in self.roles[role.role]:
+                del self.roles[role.role][str(role.level)]
     
     def update(self, roles_dict: dict):
         """
@@ -423,11 +426,7 @@ class Roles():
         Returns True if the user is a referent teacher for the given level
         or for any level if no level is given
         """
-        if level is None:
-            return self.roles[AtomicRole.REF_TEACHER] is not None
-        if isinstance(level, Level):
-            level = level.pk
-        return self.roles[AtomicRole.REF_TEACHER] == str(level)
+        return self._check_role(level, Level, AtomicRole.REF_TEACHER)
     
     def display_data(self, levels: dict[str, Level],
             subjects: dict[str, Subject]) -> list[dict]:

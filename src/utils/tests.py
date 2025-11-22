@@ -52,7 +52,9 @@ class TestMenu(TestCase):
         item2 = menu.MenuItem("item2", name="item2")
         L.extend([item1, item2])
         L.append(item2)
-        L[2] = item1
+        self.assertEqual(len(L), 2)
+        L.append(menu.MenuItem("item3", name="item3"))
+        L[2] = menu.MenuItem("item4", name="item4")
         with self.assertRaises(TypeError):
             L[2] = 2
         self.assertTrue(L.get("item2"), item2)

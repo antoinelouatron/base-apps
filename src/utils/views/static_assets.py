@@ -47,16 +47,26 @@ class AssetsLoader():
 
         Used for dev serving with vite.
         """
+        if name is None:
+            return None
         for alias, path in self.aliases.items():
             if name.startswith(alias):
                 return path + name[len(alias):]
         return name
+    
+    def _get_with_code(self, name: str, code_map: dict) -> str:
+        code = code_map.get(name)
+        if code is None:
+            log_func = logger.error if settings.MISSING_ASSET_LOG_LEVEL == "error" else logger.warning
+            log_func("Asset {} not found in assets map".format(name))
+            return None
+        return self._resolve(code)
 
     def get_script(self, name):
-        return self._resolve(self.scripts.get(name))
+        return self._get_with_code(name, self.scripts)
 
     def get_style(self, name):
-        return self._resolve(self.styles.get(name))
+        return self._get_with_code(name, self.styles)
 
 _loader = AssetsLoader()
 

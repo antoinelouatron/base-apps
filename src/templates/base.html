@@ -25,10 +25,12 @@
 <link rel="stylesheet" type="text/css" media="screen" href="{% static style %}">
 {% endfor %}
 <link rel="stylesheet" href="{%static 'style/fontawesome/all.min.css'%}">
-<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
 {% for style in print_styles %}
 <link rel="stylesheet" type="text/css" media="print" href="{% static style %}">
 {% endfor %}
+{% if highlight_stylesheet %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+{% endif %}
 {% if custom_styles %}<style class="custom-styles">
     {% for cs in custom_styles %}{{cs}}{% endfor %}
 </style>{% endif %}
@@ -66,7 +68,7 @@ delete ns.django.debug;
 {% endif %}
 {% endblock latex %}
 
-<title>CPGE Blaise Pascal | {{page_title}}</title>
+<title>{{base_title|default:"CPGE Blaise Pascal"}} | {{page_title}}</title>
 </head>
 <body class="relative min-h-screen max-w-(--breakpoint-2xl) m-auto bg-surface text-primary 2xl:border-r-2 2xl:border-surface2{% if dark_theme%} dark{% endif %}">
 <div id="growl-notif" class="fixed scale-0 -mx-32 w-64 top-4 left-1/2 [&.open]:scale-100 [&.open]:animate-unfoldIn [&.out]:scale-100 [&.out]:animate-unfoldOut flex rounded-xl shadow z-50">
@@ -208,30 +210,14 @@ onclick="ns.menus.closeSidebar()" title="close side menu" id="overlay"></div>
     {% endblock body %}
 {% block footer %}
     <footer class="shrink-0 border-t p-1 text-right">
-    
-<p xmlns:cc="http://creativecommons.org/ns#">Tous les PDF de ce site sont fournis sous license
-<a href="https://creativecommons.org/licenses/by-nc/4.0/?ref=chooser-v1" target="_blank" rel="license noopener noreferrer" style="display:inline-block;">
-CC BY-NC
-<img class="inline-block" height="20" width="20" style="height:20px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/cc.svg?ref=chooser-v1" alt="">
-<img class="inline-block" height="20" width="20" style="height:20px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/by.svg?ref=chooser-v1" alt="">
-<img class="inline-block" height="20" width="20" style="height:20px!important;margin-left:3px;vertical-align:text-bottom;" src="https://mirrors.creativecommons.org/presskit/icons/nc.svg?ref=chooser-v1" alt="">
-</a></p>
-    
+{% if footer_template_name %}
+{% include footer_template_name %}
+{% endif %}   
     </footer>
 {% endblock footer %}
 </div>
-<div id="loading-anim" class="absolute scale-0 top-0 left-0 right-0 bottom-0
-z-50 bg-surface2/80 text-center transition-transform [&.shown]:scale-100">
-    <div class="text-5xl relative top-1/2 -mt-6 lg:-mt-16 flex flex-wrap justify-center">
-        <span class="basis-full">Chargement en cours</span>
-{% for tmpl_name in animation_templates %}
-{% with anim_duration="5s" repeat_anim="indefinite" %}
-<svg viewbox="0 0 66 66"
-class="w-1/4 max-w-72 hexagon-icon animated stroke-surface5 fill-surface5 inline-block">
-    {% include tmpl_name %}
-</svg>{% endwith %}
-{% endfor %}
-    </div>
-</div>
+{% if post_content_template %}
+{% include post_content_template %}
+{% endif %}
 </body>
 </html>{% endspaceless %}

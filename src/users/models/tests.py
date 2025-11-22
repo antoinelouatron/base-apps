@@ -164,6 +164,15 @@ class TestRoles(CreateUserMixin, TestCase):
         user.roles.set([])
         roles = list(user.roles)
         self.assertEqual(len(roles), 0)
+
+        # New : multiple level for ref_teacher
+        user.roles.add(um.AtomicRole.create(ref_teacher=True, level=self.level.pk))
+        user.roles.add(um.AtomicRole.create(ref_teacher=True, level=self.level.pk + 1))
+        user.save() 
+        roles = list(user.roles)
+        self.assertEqual(len(roles), 2)
+        self.assertIn(um.AtomicRole.create(ref_teacher=True, level=self.level.pk), roles)
+        self.assertIn(um.AtomicRole.create(ref_teacher=True, level=self.level.pk + 1), roles)
     
     def test_getitem(self):
         roles = um.Roles()

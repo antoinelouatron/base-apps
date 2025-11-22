@@ -177,6 +177,8 @@ DB_BACKUP_COMMANDS = {
     }
 }
 
+MISSING_ASSET_LOG_LEVEL = "error"  # or "warning"
+
 # Logging
 # LOGGING = {
 #     "version": 1,

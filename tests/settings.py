@@ -63,6 +63,7 @@ DJANGO_VITE = {
     "static_url_prefix": "js/"  # must match the `base` option in vite.config.js
   }
 }
+VITE_ALIAS_MAP = ""
 
 
 AGENDA_ICAL_FILE = BASE_DIR / "agenda" / "gouv.ical.ics"
@@ -70,6 +71,8 @@ AGENDA_ICAL_FILE = BASE_DIR / "agenda" / "gouv.ical.ics"
 BACKUP_PATH = Path(__file__).parent / "backups"
 SENDFILE_ROOT = BACKUP_PATH.parent
 SENDFILE_BACKEND = "django_sendfile.backends.development"
+
+MISSING_ASSET_LOG_LEVEL = "warning"
 
 LOGGING = {
     "version": 1,

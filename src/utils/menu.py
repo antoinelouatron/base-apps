@@ -10,11 +10,14 @@ Each MenuItem can have a sub_menu property containing a MenuList
 Only the last MenuList of all_menus will not be collapsed.
 """
 import collections
+import logging
+
 from django import urls
 from django.forms.utils import flatatt
 import django.template.loader as tmpl_loader
 from django.utils import text
 
+logger = logging.getLogger(__name__)
 
 class MenuItem():
     """
@@ -114,23 +117,29 @@ class MenuList(collections.UserList):
 
     def __init__(self, L=None, *, title=""):
         super().__init__(L)
+        self._names = set()
         for item in self.data:
             self.__check_item(item)
         self.title = title
         self.current = ""
 
-    # Type checking
+    # Type checking + uniqueness of names
     def __check_item(self, item):
         if not isinstance(item, MenuItem):
             raise TypeError("MenuList elements must be MenuItem instances")
+        if item.name in self._names:
+            logger.error("Duplicate menu name detected: %s", item.name)
+            return False
+        self._names.add(item.name)
+        return True
 
     def __setitem__(self, i, item):
-        self.__check_item(item)
-        self.data[i] = item
+        if self.__check_item(item):
+            self.data[i] = item
     
     def append(self, item):
-        self.__check_item(item)
-        self.data.append(item)
+        if self.__check_item(item):
+            self.data.append(item)
     
     def add(self, title, url, name="", **url_kwargs):
         """
@@ -144,8 +153,8 @@ class MenuList(collections.UserList):
     def extend(self, other):
         newItems = other.data if isinstance(other, collections.UserList) else other
         for item in newItems:
-            self.__check_item(item)
-        self.data.extend(newItems)
+            if self.__check_item(item):
+                self.data.append(item)
 
     def mark_current(self, name):
         for item in self:
