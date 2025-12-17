@@ -3,12 +3,14 @@ Created on Mon Feb  1 14:09:22 2016
 """
 
 import os.path
+from typing import Iterable
 
 from django.contrib.auth.models import Permission
 from django import urls
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.test import TestCase
 
+import users.models as um
 from utils.views import json_utils, static_assets
 
 class CheckNs():
@@ -92,7 +94,7 @@ class TestURL():
         self.url = urls.reverse(reverse, kwargs=kwargs)
         self.msg = kwargs.get("msg", "statut " + self.url)
 
-    def set_user(self, user):
+    def set_user(self, user: um.User):
         self.user = user
 
     # to ease override in child class
@@ -104,7 +106,7 @@ class TestURL():
     def status(self, status):
         self._status = status
 
-    def test(self, skip_title=False, **request_kwargs):
+    def test(self, skip_title=False, msg="", **request_kwargs):
         """
         Use client to make a request to comptuted url.
         Check that permission (if any) is required, and executes any tests given at initialization.
@@ -149,7 +151,10 @@ class TestURL():
             print(resp)
             print(resp.content)
             print(resp.resolver_match)
-        testcase.assertEqual(resp.status_code, self.status, self.msg)
+        testcase.assertEqual(
+            resp.status_code,
+            self.status,
+            msg or self.msg)
         if self.status == 200 and not self._ajax:
             if hasattr(resp, "context") and resp.context is not None:
                 if "follow" not in request_kwargs and not skip_title:
@@ -167,6 +172,58 @@ class TestURL():
     def __str__(self):
         return str((self.url, self.method, self.status))
 
+class PermissionCheck():
+    """
+    Utility class to check only users with given role can access an url.
+    """
+
+    def __init__(self, url: TestURL, only_with_role: Iterable[str]):
+        """
+        url : a TestURL object with user=None
+        only_with_role : role names required to access the url
+        """
+        self.url = url
+        self.only_with_role = set(only_with_role)
+    
+    def test(self, ok_status=200, **test_kwargs):
+        """
+        Test the url with users with and without the required role.
+        """
+        user = um.User.objects.create_user(
+            username="testuser_permcheck",
+            email="testuser_permcheck@example.com",
+        )
+        level = um.Level.objects.create(name="level_permcheck")
+        subject = um.Subject.objects.create(level=level, name="subject_permcheck")
+        self.url.set_user(None)
+        base_status = self.url.status
+        self.url.status = 403
+        self.url.test(**test_kwargs)
+        self.url.set_user(user)
+        last_ok = None
+        for role_name in um.AtomicRole.CREATE_NAMES.keys():
+            kwargs = {um.AtomicRole.CREATE_NAMES[role_name]: True}
+            if role_name in um.AtomicRole._NEED_LEVEL:
+                kwargs["level"] = level
+            if role_name in um.AtomicRole._NEED_SUBJECT:
+                kwargs["subject"] = subject
+            role = um.AtomicRole.create(**kwargs)
+            user.roles.set([role])
+            user.save()
+            if role_name in self.only_with_role:
+                self.url.status = ok_status
+                last_ok = role
+            else:
+                self.url.status = 403
+            self.url.test(
+                msg="Testing role {}".format(um.AtomicRole._TRANSLATIONS[role_name]),
+                **test_kwargs
+            )
+        self.url.status = base_status
+        if last_ok is not None:
+            user.roles.set([last_ok])
+            user.save()
+            # leave url with a valid user
 
 class JsonURL(TestURL):
 

@@ -4,6 +4,7 @@ date: 2025-07-19
 
 from django.db import models
 from django.db.models.functions import Lower
+from django_jsonform.models.fields import JSONField
 
 from .modelfields import DescriptionListField, SubGradesField
 
@@ -52,8 +53,7 @@ def get_default_level(instance=False) -> Level|int:
 
 class AddDataTemplate(models.Model):
     """
-    A template for additional data to provide, beside a numeric grade, 
-    for a colle grade.
+    Modèle de données à ajouter à chaque note de colle pour une matière.
     """
     # This should live in colles/models/add_data.py, but we need it here for the
     # ForeignKey in Subject.
@@ -124,6 +124,80 @@ class AddDataTemplate(models.Model):
             raise ValueError("Ce modèle de données est verrouillé et ne peut pas être supprimé.")
         return super().delete(*args, **kwargs)
 
+class ColleTime():
+    # Périodicité des colles,
+    # source https://www.legifrance.gouv.fr/loda/article_lc/LEGIARTI000028223204
+    SEMAINE = "weekly"
+    TRIMESTRE = "termly"
+    SEMESTRE = "biannual"
+
+    # durée en minutes, par élève
+    def __init__(self, minutes: int=0, repeats: str=SEMAINE):
+        self.minutes = minutes
+        self.repeats = repeats
+    
+    def total_number(self, level: Level) -> int:
+        if self.repeats == ColleTime.SEMAINE:
+            week_count = 30 if level.first_year else 25
+            groups = level.student_count // 3 + (1 if level.student_count % 3 > 0 else 0)
+            return (groups * week_count * self.minutes * 3) / 60
+        else:
+            nb = 0
+            if self.repeats == ColleTime.TRIMESTRE:
+                nb = 3
+            elif self.repeats == ColleTime.SEMESTRE:
+                nb = 2
+            return (nb * level.student_count * self.minutes) / 60
+    
+    def to_json(self) -> dict:
+        return {
+            "minutes": self.minutes,
+            "repeats": self.repeats
+        }
+    
+    @classmethod
+    def from_json(cls, data: dict) -> "ColleTime":
+        minutes = data.get("duree", 0)
+        repeats = data.get("periode", "SEMAINE")
+        repeats = repeats.upper()
+        repeats = getattr(cls, repeats, cls.SEMAINE)
+        return cls(minutes=minutes, repeats=repeats)
+
+class ColleTimeField(JSONField):
+    """
+    Lien entre une matière et sa durée de colle, par élève.
+    """
+    ITEM_SCHEMA = {
+        "type": "object",
+        "keys": {
+            "minutes": {"type": "integer", "min": 0},
+            "repeats": {"type": "string", "enum": [
+                {"title": "Semaine", "value": ColleTime.SEMAINE},
+                {"title": "Trimestre", "value": ColleTime.TRIMESTRE},
+                {"title": "Semestre", "value": ColleTime.SEMESTRE}
+            ]}
+        }
+    }
+    
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("default", ColleTime)
+        super().__init__(*args, **kwargs)
+
+    def from_db_value(self, value, expression, connection):
+        if value is None:
+            return ColleTime()
+        value = super().from_db_value(value, expression, connection)
+        instance = ColleTime(**value)
+        return instance
+
+    def get_prep_value(self, value):
+        if isinstance(value, ColleTime):
+            return value.to_json()
+        return super().get_prep_value(value)
+    
+    def validate(self, value, model_instance):
+        return isinstance(value, ColleTime)
+
 class Subject(models.Model):
     """
     Represents a subject taught in a level.
@@ -138,6 +212,7 @@ class Subject(models.Model):
     level = models.ForeignKey(Level, on_delete=models.CASCADE, verbose_name="Classe")
     data_template = models.ForeignKey(AddDataTemplate, on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name="Données de colle")
+    colle_time = ColleTimeField(verbose_name="Durée de colle", default=ColleTime)
 
     def __str__(self):
         return self.name
@@ -168,6 +243,14 @@ class AtomicRole():
         SECRETARY: "Secrétaire",
         SCHOOL_ADMIN: "Administration",
         REF_TEACHER: "Prof référent",
+    }
+    CREATE_NAMES = {
+        STUDENT: "student",
+        TEACHER: "teacher",
+        COLLEUR: "colleur",
+        SECRETARY: "secretary",
+        SCHOOL_ADMIN: "school_admin",
+        REF_TEACHER: "ref_teacher",
     }
 
     def __init__(self, role=NONE, level=None, subject=None):

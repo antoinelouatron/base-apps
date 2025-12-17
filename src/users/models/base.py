@@ -147,6 +147,7 @@ class User(AbstractUser):
     # included fields : username, first_name, last_name, email, password
     # groups, user_permissions, is_staff, is_active, is_superuser, last_login, date_joined
     roles = umr.RolesField(verbose_name="Rôles", blank=True)
+    is_chaire_sup = models.BooleanField(default=False)
     # legacy role management, for content app
     teacher = models.BooleanField(default=False) # PT/math-info
     student = models.BooleanField(default=False)

@@ -1,6 +1,6 @@
 [project]
 name = "base_sites"
-version = "1.0.1"
+version = "1.1.0"
 description = "Applications de base pour la construction d'autres sites plus complets"
 authors = [
     {name = "Antoine Louatron",email = "antoine@louatron.fr"}
@@ -22,7 +22,8 @@ dependencies = [
     "beautifulsoup4 (>=4.14.2,<5.0.0)",
     "wrapt (>=1.17.3,<2.0.0)",
     "lxml (>=6.0.2,<7.0.0)",
-    "django-vite (>=3.1.0,<4.0.0)"
+    "django-vite (>=3.1.0,<4.0.0)",
+    "django-jsonform (>=2.23.2,<3.0.0)"
 ]
 
 [tool.poetry]

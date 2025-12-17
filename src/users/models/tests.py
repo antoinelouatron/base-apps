@@ -332,3 +332,28 @@ class TestUserManager(CreateUserMixin, TestCase):
         self.assertEqual(um.User.objects.teachers(self.subject).count(), 1)
         self.assertEqual(um.User.objects.colleurs(self.subject).count(), 1)
         self.assertEqual(um.User.objects.students(self.level).count(), 2)
+
+class TestColleTime(TestCase):
+
+    def test_colle(self):
+        level = um.Level.objects.create(name="Level 1", first_year=True,
+            student_count=30)
+        ct = um.ColleTime(minutes=10, repeats=um.ColleTime.SEMAINE)
+        self.assertEqual(ct.total_number(level), 30*10*30 / 60)  # 30 students, 10 minutes, 30 weeks
+        ct.repeats = um.ColleTime.TRIMESTRE
+        self.assertEqual(ct.total_number(level), 30*10*3 / 60)  #
+        level.student_count = 31 # 11 groups now
+        ct.repeats = um.ColleTime.SEMAINE
+        self.assertEqual(ct.total_number(level), 33*10*30 / 60)
+    
+    def test_model_fields(self):
+        ct = um.ColleTime(minutes=15, repeats=um.ColleTime.SEMAINE)
+        level = um.Level.objects.create(name="Level 1", first_year=True,
+            student_count=30)
+        subject = um.Subject.objects.create(name="Subject 1", level=level)
+        subject.colle_time = ct
+        subject.save()
+        subject.refresh_from_db()
+        self.assertEqual(subject.colle_time.minutes, 15)
+        self.assertEqual(subject.colle_time.repeats, um.ColleTime.SEMAINE)
+        self.assertEqual(subject.colle_time.total_number(level), 30*15*30 / 60)
