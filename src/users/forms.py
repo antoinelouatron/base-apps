@@ -80,7 +80,6 @@ class UserAtomicForm(forms.ModelForm):
             save_group()
         return inst
 
-
 class ImportUsers(FileImportForm):
 
     teacher = forms.BooleanField(required=False, label="Professeur")

@@ -163,45 +163,26 @@ class ColleTime():
         repeats = getattr(cls, repeats, cls.SEMAINE)
         return cls(minutes=minutes, repeats=repeats)
 
-class ColleTimeField(JSONField):
-    """
-    Lien entre une matière et sa durée de colle, par élève.
-    """
-    ITEM_SCHEMA = {
-        "type": "object",
-        "keys": {
-            "minutes": {"type": "integer", "min": 0},
-            "repeats": {"type": "string", "enum": [
-                {"title": "Semaine", "value": ColleTime.SEMAINE},
-                {"title": "Trimestre", "value": ColleTime.TRIMESTRE},
-                {"title": "Semestre", "value": ColleTime.SEMESTRE}
-            ]}
-        }
-    }
-    
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("default", ColleTime)
-        super().__init__(*args, **kwargs)
-
-    def from_db_value(self, value, expression, connection):
-        if value is None:
-            return ColleTime()
-        value = super().from_db_value(value, expression, connection)
-        instance = ColleTime(**value)
-        return instance
-
-    def get_prep_value(self, value):
-        if isinstance(value, ColleTime):
-            return value.to_json()
-        return super().get_prep_value(value)
-    
-    def validate(self, value, model_instance):
-        return isinstance(value, ColleTime)
+def default_colle_time():
+    return {"minutes": 0, "repeats": ColleTime.SEMAINE}
 
 class Subject(models.Model):
     """
     Represents a subject taught in a level.
     """
+    ITEM_SCHEMA = {
+        "type": "object",
+        "keys": {
+            "minutes": {"type": "integer", "min": 0, "title": "Durée (minutes)",
+                "default": 0},
+            "repeats": {"type": "string", "title": "Périodicité", "enum": [
+                {"title": "Semaine", "value": ColleTime.SEMAINE},
+                {"title": "Trimestre", "value": ColleTime.TRIMESTRE},
+                {"title": "Semestre", "value": ColleTime.SEMESTRE}
+            ],
+                "default": ColleTime.SEMAINE}
+        }
+    }
     class Meta:
         verbose_name = "Matière"
         verbose_name_plural = "Matières"
@@ -212,13 +193,26 @@ class Subject(models.Model):
     level = models.ForeignKey(Level, on_delete=models.CASCADE, verbose_name="Classe")
     data_template = models.ForeignKey(AddDataTemplate, on_delete=models.SET_NULL,
         null=True, blank=True, verbose_name="Données de colle")
-    colle_time = ColleTimeField(verbose_name="Durée de colle", default=ColleTime)
+    colle_time = JSONField(verbose_name="Durée de colle par élève", schema=ITEM_SCHEMA,
+        default=default_colle_time,
+        blank=True)
 
     def __str__(self):
         return self.name
     
     def full_name(self):
         return f"{self.name} {self.level.name}"
+    
+    @property
+    def colle_dur(self) -> ColleTime:
+        if not hasattr(self, "_colle_dur_cache"):
+            self._colle_dur_cache = ColleTime(**self.colle_time)
+        return self._colle_dur_cache
+    
+    @colle_dur.setter
+    def colle_dur(self, value: ColleTime):
+        self.colle_time = value.to_json()
+        self._colle_dur_cache = value
 
 def prepare_qs_for_component(queryset):
     return {str(obj.pk): obj for obj in queryset}
@@ -400,10 +394,11 @@ class Roles():
         if self.roles[AtomicRole.SCHOOL_ADMIN]:
             yield AtomicRole.create(school_admin=True)
         for level in self.roles[AtomicRole.REF_TEACHER]:
-            yield AtomicRole.create(
-                ref_teacher=True,
-                level=level
-            )
+            if self.roles[AtomicRole.REF_TEACHER][level]:
+                yield AtomicRole.create(
+                    ref_teacher=True,
+                    level=level
+                )
         for level in self.roles[AtomicRole.STUDENT]:
             if self.roles[AtomicRole.STUDENT][level]:
                 yield AtomicRole.create(
@@ -414,6 +409,12 @@ class Roles():
             if self.roles[AtomicRole.TEACHER][subject]:
                 yield AtomicRole.create(
                     teacher=True,
+                    subject=subject
+                )
+        for subject in self.roles[AtomicRole.COLLEUR]:
+            if self.roles[AtomicRole.COLLEUR][subject]:
+                yield AtomicRole.create(
+                    colleur=True,
                     subject=subject
                 )
 
