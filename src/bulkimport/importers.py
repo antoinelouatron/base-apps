@@ -15,7 +15,7 @@ class ViewList():
         name is an optionnal label for the generated link.
         """
         if view_name in self.views:
-            raise ValueError("Same view name")
+            raise ValueError(f"Same view name : {self.views[view_name]}")
         self.views[view_name] = name
         self.urlpatterns.append(
             urls.path(view_name, cls.as_view(), name=view_name))

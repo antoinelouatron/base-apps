@@ -1,12 +1,23 @@
+import users.models as um
+import users.permissions as up
 from utils import menu
 from utils.views import TemplateView, mixins
 
-def agenda_menus():
+AGENDA_PERM : up.Permission = up.REF_TEACHER or up.SECRETARY or up.SCHOOL_ADMIN
+
+def agenda_menus(user: um.User) -> menu.MenuList:
     ml = menu.MenuList()
     ml.add("Agenda", "agenda:index", "index")
     ml.add("Gestion des semaines", "agenda:weeks", "weeks")
-    ml.add("Gestion EDT","agenda:manage_periodic",  "calendar")
-    ml.add("Événements ponctuels", "agenda:manage_events", "events")
+    for level in um.Level.objects.all():
+        # TODO : move that !
+        ml.add(f"Colloscope {level.name}", "agenda:cscope_overview", f"cscope_overview_{level.id}", pk=level.id)
+        if not AGENDA_PERM.has_permission(user, level=level):
+            continue
+        ml.add(f"Gestion EDT {level.name}","agenda:manage_periodic",  f"calendar_{level.id}", level_id=level.id)
+        ml.add(f"Événements ponctuels {level.name}", "agenda:manage_events", f"events_{level.id}", pk=level.id)
+    
+
     return ml
 
 class AgendaHome(mixins.UserIsStaffMixin, TemplateView):
@@ -15,7 +26,7 @@ class AgendaHome(mixins.UserIsStaffMixin, TemplateView):
     PAGE_TITLE = "Emploi du temps"
 
     def get_all_menus(self, ctx):
-        base = agenda_menus()
+        base = agenda_menus(self.request.user)
         base.title = "Agenda"
         base.mark_current("index")
         account = self.account_menu_items()

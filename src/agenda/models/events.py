@@ -73,6 +73,12 @@ class AttendanceEvent(models.Model):
     # field manager. The managed field must have same name, prefixed by underscore
     attendance_string = attendance.AttendanceField()
 
+    def get_level(self) -> Level:
+        """
+        Returns the levels of the attendants
+        """
+        raise NotImplementedError()
+
 class ToSpanMixin():
 
     def get_ref_event(self):
@@ -132,6 +138,9 @@ class AbstractPeriodic(compatibility.SpanComparisonMixin, models.Model):
         verbose_name="Matière")
     classroom = models.CharField(max_length=10, verbose_name="Salle",
         blank=True, default="")
+    
+    def get_level(self) -> Level:
+        return self.subj.level
 
     @property
     def day_label(self):
@@ -201,7 +210,7 @@ class PeriodicEvent(
     compatibility.EventCompatibility, AbstractPeriodic, AttendanceEvent, ToSpanMixin
     ):
     """
-    Represents an event occuring at regular interval of time
+    Represents an event occurring at regular interval of time
     """
 
     class Meta:
@@ -222,8 +231,7 @@ class PeriodicEvent(
         """
         if self.day != other.day:
             return True
-        if (self.beghour <= other.beghour < self.endhour or
-                other.beghour <= self.beghour < other.endhour):
+        if self.overlap(other):
             # check if there's a day intersection
             g = math.gcd(self.periodicity, other.periodicity)
             # b + up = b' + vp' iff b - b' = -up - vp' so gcd(p, p') | b - b'
@@ -255,6 +263,8 @@ class PeriodicEvent(
         return other.compatible_other(self)
     
     def occur_in_week(self, week: Week) -> bool:
+        if week.nb is None:
+            return False
         interval = (self.begweek <= week.nb <= self.endweek)
         return interval and not ((week.nb - self.begweek) % self.periodicity)
 
@@ -275,11 +285,22 @@ class PeriodicEvent(
     def __str__(self):
         return f"{self.label} {self.day_label} {self.beghour}-{self.endhour}"
 
-    @property
-    def full_label(self):
+    def compute_full_label(self):
+        """
+        Compute full label with subject for creation
+        """
         if self.label.endswith(self.sep_subject):
             return self.label
         return f"{self.label} {self.sep_subject}"
+
+    @property
+    def full_label(self):
+        return self.label
+    
+    def save(self, *args, **kwargs):
+        if self.pk is None:
+            self.label = self.compute_full_label()
+        super().save(*args, **kwargs)
 
     def get_span_kwargs(self):
         kwargs = super().get_span_kwargs()
@@ -361,6 +382,11 @@ class BaseEvent(compatibility.EventCompatibility, AttendanceEvent):
     # we only allow event inside a week, enforced in save
     week = models.ForeignKey(Week, models.CASCADE,
         verbose_name="Semaine", null=True, blank=True, default=None,)
+    level = models.ForeignKey(Level, on_delete=models.CASCADE,
+        verbose_name="Classe", blank=True, default=get_default_level,)
+    
+    def get_level(self) -> Level:
+        return self.level
     
     def save(self, *args, **kwargs):
         if not self.week:
@@ -477,7 +503,12 @@ class ToDo(AttendanceEvent, metaclass=TimelineMetaclass):
     long_label = models.TextField(verbose_name="Description", blank=True, default="")
     msg_level = models.SmallIntegerField(default=0, verbose_name="Niveau de message",
         choices=((INFO, "Info"), (WARNING, "Avertissement"), (ALERT, "Alerte")))
+    level = models.ForeignKey(Level, on_delete=models.CASCADE,
+        verbose_name="Classe", blank=True, default=get_default_level,)
     # TODO : add a reminder field with djangoq2 link ?
+
+    def get_level(self) -> Level:
+        return self.level
 
     def __str__(self):
         return self.label

@@ -351,9 +351,9 @@ class TestColleTime(TestCase):
         level = um.Level.objects.create(name="Level 1", first_year=True,
             student_count=30)
         subject = um.Subject.objects.create(name="Subject 1", level=level)
-        subject.colle_time = ct
+        subject.colle_dur = ct
         subject.save()
         subject.refresh_from_db()
-        self.assertEqual(subject.colle_time.minutes, 15)
-        self.assertEqual(subject.colle_time.repeats, um.ColleTime.SEMAINE)
-        self.assertEqual(subject.colle_time.total_number(level), 30*15*30 / 60)
+        self.assertEqual(subject.colle_dur.minutes, 15)
+        self.assertEqual(subject.colle_dur.repeats, um.ColleTime.SEMAINE)
+        self.assertEqual(subject.colle_dur.total_number(level), 30*15*30 / 60)

@@ -10,6 +10,7 @@ from django.http import JsonResponse
 from django.views.generic import TemplateView, View
 import django.template as template
 
+import users.permissions as up
 from . import static_assets, json_utils, rich_results
 from utils import menu, actions
 
@@ -29,6 +30,44 @@ class UserIsTeacherMixin(UserPassesTestMixin):
         b = self.request.user.is_authenticated and self.request.user.teacher
         b = b or self.request.user.is_staff
         return b
+
+class PermissionMixin(UserPassesTestMixin):
+    """
+    Define self.level or self.subject and override PERMISSION to use this mixin.
+    """
+
+    PERMISSION = up.AllowAll()
+    raise_exception = True
+
+    def set_level_data(self):
+        level = getattr(self, "level", None)
+        subject = getattr(self, "subject", None)
+        return level, subject
+
+    @classmethod
+    def check_permission(cls, user, level=None, subject=None) -> bool:
+        """
+        Check if the user has permission to perform an action on the object.
+        """
+        if user.is_superuser:
+            return True
+        return cls.PERMISSION.has_permission(user, level, subject)
+
+    def test_func(self):
+        # at the beginning of dispatch method
+        request = getattr(self, "request", None)
+        if not request:
+            return False
+        level, subject = self.set_level_data()
+        return self.check_permission(request.user, level, subject)
+
+class JSONPermissionMixin(PermissionMixin):
+    """
+    Mixin for JSON views to return JSON error messages instead of raising 403.
+    """
+
+    def handle_no_permission(self):
+        return self.error("Accès interdit")
 
 class JSONResponseMixin():
     """

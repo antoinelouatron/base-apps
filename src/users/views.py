@@ -3,7 +3,7 @@ date: 2024-02-23
 """
 import collections
 import logging
-from typing import Any
+from typing import Any, Iterable
 
 from django import forms, urls
 from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
@@ -11,16 +11,18 @@ from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.db import transaction
 from django.http import QueryDict
-from django.shortcuts import redirect
+from django.shortcuts import get_object_or_404, redirect
 from django.views.generic.edit import UpdateView
 
 from bulkimport import views as bv
 from users import change_collegroups
 import users.forms
+import users.permissions as up
 import users.models as um
 from utils import menu
+import utils.reverse
 from utils.views import TemplateView, ListView, View, FormView
-from utils.views.mixins import JSONFormView, JSONResponseMixin, UserIsStaffMixin
+from utils.views.mixins import BaseJsonView, JSONFormView, JSONResponseMixin, UserIsStaffMixin, PermissionMixin
 
 class EditUserPref(LoginRequiredMixin, JSONFormView, UpdateView):
     
@@ -254,3 +256,94 @@ class ChangeColleGroups(UserIsStaffMixin, FormView):
         except:
             form._non_form_errors.append(forms.ValidationError("Erreur de sauvegarde."))
             return self.form_invalid(form)
+
+def serialize_user(user: um.User, levels: dict[str, um.Level], subjects: dict[str, um.Subject]) -> dict:
+    return {
+        "id": user.id,
+        "first_name": user.first_name,
+        "last_name": user.last_name,
+        "email": user.email,
+        "roles": user.roles.display_data(levels, subjects),
+        "active": user.is_active
+    }
+
+class LevelPermissionMixin(PermissionMixin):
+    PERMISSION = up.SCHOOL_ADMIN | up.SECRETARY
+    permission_denied_message = "Vous n'avez pas la permission de gérer les classes."
+
+class UserListsView(LevelPermissionMixin, TemplateView):
+    template_name = "users/user_list.html"
+    SCRIPTS = ["user_list"]
+    PAGE_TITLE = "Gérer les utilisateurs"
+
+    def _prepare_subjects(self, subjects: Iterable[um.Subject]) -> dict[str, list[str]]:
+        by_level = {}
+        for subject in subjects:
+            by_level.setdefault(str(subject.level.id), []).append(str(subject.id))
+        return by_level
+
+    def popns(self, **kwargs):
+        ns = super().popns(**kwargs)
+        users = []
+        levels = um.prepare_qs_for_component(um.Level.objects.all())
+        subjects = um.prepare_qs_for_component(
+            um.Subject.objects.select_related("level"))
+        qs = um.User.objects.filter(is_active=True).order_by(
+            "last_name", "first_name")
+        for u in qs:
+            users.append(serialize_user(u, levels, subjects))
+        ns["users"] = users
+        ns["urls"] = {
+            "addRole": urls.reverse("users:add_role"),
+            "removeRole": urls.reverse("users:remove_role"),
+            "manageUser": utils.reverse.without_trailing_pk("users:api:manage_user")
+        }
+        ns["levelSubjects"] = self._prepare_subjects(subjects.values())
+        ns["needLevel"] = list(
+            um.AtomicRole._NEED_SUBJECT.union(um.AtomicRole._NEED_LEVEL))
+        ns["needSubject"] = list(
+            um.AtomicRole._NEED_SUBJECT)
+        return ns
+    
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["form"] = users.forms.UserRoleForm(superuser=self.request.user.is_superuser)
+        return ctx
+
+class ManageUserView(LevelPermissionMixin, JSONFormView, UpdateView):
+    form_class = users.forms.UserForm
+    model = um.User
+    form_template_name = "users/fragments/user_form.html"
+
+    def serialize_object(self, obj):
+        return {"user": serialize_user(
+            obj,
+            um.prepare_qs_for_component(um.Level.objects.all()),
+            um.prepare_qs_for_component(um.Subject.objects.select_related("level"))
+        )}
+
+
+class AddRoleView(LevelPermissionMixin, BaseJsonView):
+    http_method_names = ["post"]
+    role_method_name = "add"
+
+    def get_data(self, context, **kwargs):
+        levels = {str(level.pk): level for level in um.Level.objects.all()}
+        subjects = {str(subject.pk): subject for subject in um.Subject.objects.all()}
+        context["user"] = serialize_user(self.user, levels, subjects)
+        return super().get_data(context, **kwargs)
+
+    def post(self, request, *args, **kwargs):
+        form = users.forms.UserRoleForm(request.POST, superuser=request.user.is_superuser)
+        if form.is_valid():
+            user = get_object_or_404(um.User, id=form.cleaned_data.get("id"))
+            role = form.save()
+            method = getattr(user.roles, self.role_method_name)
+            method(role)
+            user.save()
+            self.user = user
+            return self.ok({})
+        return self.error("Données invalides.")
+
+class RemoveRoleView(AddRoleView):
+    role_method_name = "remove"

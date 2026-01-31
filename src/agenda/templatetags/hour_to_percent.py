@@ -17,15 +17,15 @@ def time_diff(t1, t2):
     return datetime.datetime.combine(today, t1) - datetime.datetime.combine(today, t2)
 
 @register.simple_tag
-def to_rem(time1, time2=None):
+def to_rem(time1, time2=None, base_height=2):
     """
-    Convention : 30 min = 2rem
+    Convention : 30 min = base_height rem
 
     If only one time is given, compute difference to 8:00
     """
     if time2 is None:
         time2 = datetime.time(8, 0)
-    return (2 * int(time_diff(time1, time2).total_seconds())) // 1800
+    return (base_height * int(time_diff(time1, time2).total_seconds())) / 1800
 
 COLORS_MAP = {
     "math": ["bg-cyan-200", "text-blue-800", "dark:bg-cyan-700", "dark:text-blue-100"],
@@ -62,3 +62,4 @@ def event_classes(ev, overlap_nb=1, position=0):
     if position == overlap_nb - 1:
         classes.append("border-r-0") # last
     return " ".join(classes)
+

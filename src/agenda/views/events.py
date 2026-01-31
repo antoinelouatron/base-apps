@@ -112,7 +112,7 @@ class CreateUpdatePeriodic(BasePeriodicManage):
 
     def get_queryset(self):
         qs =  am.PeriodicEvent.objects.order_by("day", "beghour", "subj")
-        # TODO : filter by level after adding subject foreign key
+        qs = qs.select_related("subj", "subj__level")
         qs = qs.filter(subj__level=self.level)
         return qs
 
@@ -124,7 +124,7 @@ class CreateUpdatePeriodic(BasePeriodicManage):
         return kwargs
 
     def get_all_menus(self, ctx):
-        base = ah.agenda_menus()
+        base = ah.agenda_menus(self.request.user)
         base.mark_current("calendar")
         account = self.account_menu_items()
         account.mark_current("agenda")
@@ -158,6 +158,11 @@ class CreateUpdatePeriodic(BasePeriodicManage):
 
 class PrintTimetableView(CreateUpdatePeriodic):
     template_name = "agenda/printable_timetable.html"
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["tt_scale"] = 2.5
+        return ctx
 
 class DeletePeriodicView(mixins.UserIsStaffMixin, mixins.BaseJsonView):
     model = am.PeriodicEvent
@@ -274,7 +279,7 @@ class ToDoManageView(mixins.UserIsStaffMixin, utils.views.CreateUpdateView):
     SCRIPTS = ["home"]
 
     def get_all_menus(self, ctx):
-        base = ah.agenda_menus()
+        base = ah.agenda_menus(self.request.user)
         base.mark_current("todo")
         account = self.account_menu_items()
         account.mark_current("agenda")
@@ -303,7 +308,7 @@ class ManageBaseEvent(mixins.UserIsStaffMixin,  TimetableDisplayMixin,
         return super().dispatch(request, *args, **kwargs)
 
     def get_all_menus(self, ctx):
-        base = ah.agenda_menus()
+        base = ah.agenda_menus(self.request.user)
         base.mark_current("events")
         account = self.account_menu_items()
         account.mark_current("agenda")

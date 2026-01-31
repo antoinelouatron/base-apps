@@ -21,7 +21,7 @@
 {% include "components/modal.html" %}
 {% endwith %}
 {% if is_teacher %}
-<span class="hidden lg:block button modal-button" data-modal-target="#tt-user-select"
+<span class="button modal-button" data-modal-target="#tt-user-select"
     id="user-select-btn">
     <i class="fas fa-user-secret pointer-events-none"></i></span>
 {% with modal_id="tt-user-select" modal_title="Voir l'EDT en tant que" modal_footer_tmpl="agenda/components/modal_reset_tt_user.html"%}

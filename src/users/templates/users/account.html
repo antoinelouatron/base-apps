@@ -2,6 +2,7 @@
 
 {% block content %}
 <h1 class="pl-2 text-xl">Mon compte</h1>
+<div>Adresse email : {{ user.email }}</div>
 Votre profil est associé aux rôles suivants :
 <ul class="pl-8 mb-2">{% for role in user_roles %}
     <li class="list-disc">{{ role.role }}</li>

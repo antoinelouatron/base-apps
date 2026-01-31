@@ -54,6 +54,6 @@ urlpatterns = [
     #agenda app
     path("agenda/", include("agenda.urls", namespace="agenda")),
     path("profil/", include("users.urls", namespace="users")),
-    path("import/", include("bulkimport.urls", namespace="import")),
+    #path("import/", include("bulkimport.urls", namespace="import")),
     path("api/get-token/", obtain_auth_token, name="api_obtain_token"),
 ]

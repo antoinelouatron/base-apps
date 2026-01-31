@@ -1,0 +1,77 @@
+{% load static%}{% load breakpoints %}
+{% load django_vite %}
+{% load media_tag %}
+<!DOCTYPE html>
+<html lang="fr" class="scroll-smooth">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="dark light">
+<link rel="apple-touch-icon-precomposed" sizes="144x144" href="{% icon_url 'apple-touch-icon-144x144.png' %}" />
+<link rel="apple-touch-icon-precomposed" sizes="152x152" href="{% icon_url 'apple-touch-icon-152x152.png' %}" />
+<link rel="icon" type="image/png" href="{% icon_url 'favicon-32x32.png' %}" sizes="32x32" />
+<link rel="icon" type="image/png" href="{% icon_url 'favicon-16x16.png' %}" sizes="16x16" />
+{% if canonical %}
+<link rel="canonical" href="{{canonical}}" />
+{% endif %}
+<meta name="application-name" content="CPGE PT à Rouen"/>
+<meta name="msapplication-TileColor" content="#FFFFFF" />
+<meta name="msapplication-TileImage" content="{% icon_url 'mstile-144x144.png' %}" />
+{% if page_description %}
+<meta name="description" content="{{page_description}}">
+{% endif %}
+{% block style %}
+{% for style in style_list %}
+<link rel="stylesheet" type="text/css" media="screen" href="{% static style %}">
+{% endfor %}
+<link rel="stylesheet" href="{%static 'style/fontawesome/all.min.css'%}">
+{% for style in print_styles %}
+<link rel="stylesheet" type="text/css" media="print" href="{% static style %}">
+{% endfor %}
+{% if highlight_stylesheet %}
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/styles/default.min.css">
+{% endif %}
+{% if custom_styles %}<style class="custom-styles">
+    {% for cs in custom_styles %}{{cs}}{% endfor %}
+</style>{% endif %}
+{% endblock style %}
+
+{% block headscripts %}
+<script class="inline-script">{% include "inline_head_script.js" %}</script>
+{% if popns %}{{popns.data|json_script:"nsdata"}}
+<script>
+ns.django = JSON.parse(document.getElementById("nsdata").textContent);
+Object.assign(ns.debug, ns.django.debug);
+delete ns.django.debug;
+</script>
+{% endif %}
+<script src="{% static 'js/htmx.min-2.0.7.js' %}"></script>
+{% vite_hmr_client %}
+{% block bundles %}
+{% for script in script_list %}
+{% vite_asset script %}
+{% endfor %}
+{% endblock bundles %}
+{% if rich_results %}
+<script type="application/ld+json">{{rich_results|safe}}</script>
+{% endif %}
+{% endblock headscripts %}
+
+{% block quill %}
+{% if needs_quill %}
+<link href="{% static 'style/quill.snow.css'%}" rel="stylesheet" media="screen">
+{% endif %}
+{% endblock quill %}
+{% block latex %}
+{% if needs_latex %}
+<link href="{% static 'style/katex.min.css'%}" rel="stylesheet" media="screen">
+{% endif %}
+{% endblock latex %}
+
+<title>{{base_title|default:"CPGE Blaise Pascal"}} | {{page_title}}</title>
+</head>
+<body class="min-h-screen min-w-screen bg-surface text-primary{% if dark_theme%} dark{% endif %}">
+{% block body %}
+{% endblock body %}
+</body>
+</html>

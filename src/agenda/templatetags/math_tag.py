@@ -13,3 +13,7 @@ def divide(nb1, nb2, percent=False):
         return "{percent:.2%}".format(percent=res)
     else:
         return "{res:f}".format(res=res)
+
+@register.simple_tag
+def multiply(nb1, nb2):
+    return nb1*nb2 #"{res:f}".format(res=nb1*nb2)

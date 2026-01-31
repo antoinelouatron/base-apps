@@ -112,16 +112,18 @@ class TestYear(TestCase):
 class TestPeriodic(WithWeeks):
 
     def test_manager(self):
+        level = um.Level.objects.create(name="TestLevel")
+        subject = um.Subject.objects.create(name="Math", level=level)
         am.PeriodicEvent.objects.create(beghour=time(8), endhour=time(10),
-            day=0, begweek=1, endweek=10, periodicity=2)
+            day=0, begweek=1, endweek=10, periodicity=2, subj=subject)
         am.PeriodicEvent.objects.create(beghour=time(8), endhour=time(10),
-            day=0, begweek=2, endweek=10, periodicity=2)
+            day=0, begweek=2, endweek=10, periodicity=2, subj=subject)
         am.PeriodicEvent.objects.create(beghour=time(8), endhour=time(10),
-            day=0, begweek=1, endweek=10, periodicity=3)
+            day=0, begweek=1, endweek=10, periodicity=3, subj=subject)
         am.PeriodicEvent.objects.create(beghour=time(8), endhour=time(10),
-            day=0, begweek=2, endweek=10, periodicity=3)
+            day=0, begweek=2, endweek=10, periodicity=3, subj=subject)
         am.PeriodicEvent.objects.create(beghour=time(8), endhour=time(10),
-            day=0, begweek=3, endweek=10, periodicity=3)
+            day=0, begweek=3, endweek=10, periodicity=3, subj=subject)
         for i in range(1, 10):
             with self.subTest(nb=i):
                 week = am.Week.objects.get(nb=i)
@@ -131,7 +133,7 @@ class TestPeriodic(WithWeeks):
         week = am.Week.objects.get(nb=11)
         self.assertEqual(am.PeriodicEvent.objects.for_week(week).count(), 0)
         am.PeriodicEvent.objects.create(beghour=time(8), endhour=time(10),
-            day=0, begweek=0, endweek=10, periodicity=5)
+            day=0, begweek=0, endweek=10, periodicity=5, subj=subject)
         for i in range(1, 10):
             with self.subTest(nb=i):
                 week = am.Week.objects.get(nb=i)
@@ -713,12 +715,14 @@ class TestTimeTables(WithWeeks):
         for i in (1,2):
             um.User.objects.create_student(username=f"stud{i}", colle_group=i)
         # attendance all
+        level = um.Level.objects.create(name="level1")
+        subject = um.Subject.objects.create(name="subject1", level=level)
         for d in range(5):
             ev = am.PeriodicEvent.objects.create(beghour=time(8+d), endhour=time(10+d),
-                day=d, begweek=1, endweek=10, periodicity=2)
+                day=d, begweek=1, endweek=10, periodicity=2, subj=subject)
             ev.attendance_string = "all"
             ev2 = am.PeriodicEvent.objects.create(beghour=time(8+d), endhour=time(10+d),
-                day=d, begweek=2, endweek=10, periodicity=2)
+                day=d, begweek=2, endweek=10, periodicity=2, subj=subject)
             ev2.attendance_string = "all"
             this_day = [ev, ev2]
             pevs.extend(this_day)
@@ -732,7 +736,7 @@ class TestTimeTables(WithWeeks):
         pev2 = []
         for d in range(5):
             ev = am.PeriodicEvent.objects.create(beghour=time(8), endhour=time(10),
-                day=d, begweek=1, endweek=10, periodicity=1)
+                day=d, begweek=1, endweek=10, periodicity=1, subj=subject)
             ev.attendance_string = "all"
             pev2.append(ev)
         tt = table.CompatTimetable.construct(pevs + pev2, [], [])
@@ -779,16 +783,16 @@ class TestTimeTables(WithWeeks):
         pev3 = []
         for d in range(5):
             ev = am.PeriodicEvent.objects.create(beghour=time(14), endhour=time(16),
-                day=d, begweek=1, endweek=10, periodicity=2)
+                day=d, begweek=1, endweek=10, periodicity=2, subj=subject)
             ev.attendance_string = "1,M. 1"
             ev2 = am.PeriodicEvent.objects.create(beghour=time(14), endhour=time(16),
-                day=d, begweek=2, endweek=10, periodicity=2)
+                day=d, begweek=2, endweek=10, periodicity=2, subj=subject)
             ev2.attendance_string = "2,M. 1"
             ev3 = am.PeriodicEvent.objects.create(beghour=time(14), endhour=time(15),
-                day=d, begweek=2, endweek=10, periodicity=2)
+                day=d, begweek=2, endweek=10, periodicity=2, subj=subject)
             ev3.attendance_string = "1,M. 2"
             ev4 = am.PeriodicEvent.objects.create(beghour=time(14), endhour=time(15),
-                day=d, begweek=1, endweek=10, periodicity=2)
+                day=d, begweek=1, endweek=10, periodicity=2, subj=subject)
             ev4.attendance_string = "2,M. 2"
             this_day = [ev, ev2, ev3, ev4]
             pev3.extend(this_day)

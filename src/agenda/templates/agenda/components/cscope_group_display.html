@@ -1,0 +1,10 @@
+{% if compact %}
+{{obj.nb}}
+{% else %}
+{{obj}}
+<ul>
+{% for scg in obj.studcollegroup_set.all %}
+    <li>{{scg.student.display_name}}</li>
+{% endfor %}
+</ul>
+{% endif %}

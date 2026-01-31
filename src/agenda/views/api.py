@@ -7,7 +7,7 @@ from typing import Any
 
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ObjectDoesNotExist
-from django.utils import timezone
+from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import CreateView
 
 from rest_framework import viewsets, serializers
@@ -149,16 +149,20 @@ class CreateNoteView(mixins.UserIsTeacherMixin, mixins.JSONFormView, CreateView)
             "comment": obj.comment
         }
 
-class CheckAgendaView(mixins.UserIsStaffMixin, mixins.JSONTemplateView):
+class CheckAgendaView(mixins.UserIsStaffMixin, mixins.JSONTemplateView, SingleObjectMixin):
     template_name = "agenda/check_agenda.html"
     raise_exception = True
+    model = um.Level
 
     def construct_agenda(self):
-        pevs = events.PeriodicEvent.objects.all()
-        cps = colles.CollePlanning.objects.all()
+        pevs = events.PeriodicEvent.objects.filter(subj__level=self.level)
+        pevs = pevs.select_related("subj", "subj__level")
+        cps = colles.CollePlanning.objects.filter(event__subj__level=self.level)
+        cps = cps.select_related("event", "event__subj", "event__subj__level")
         return timetable.CompatTimetable.construct(pevs, cps, [])
     
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
+        self.level = self.object = self.get_object() # super requires self.object
         ctx = super().get_context_data(**kwargs)
         ctx["agenda"] = self.construct_agenda()
         return ctx

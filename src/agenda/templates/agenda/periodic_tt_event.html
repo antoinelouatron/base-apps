@@ -6,10 +6,10 @@
 
 <div class="border absolute flex flex-wrap flex-col justify-center items-center event {{ev.subject}} overlap-{{ev.overlap_nb}} {% event_classes ev ev.overlap_nb ev.position %}"
     {% dict_to_data ev.to_json %}
-    style="top:{% to_rem ev.beghour %}rem;
-           height:{% to_rem ev.endhour ev.beghour %}rem;
-           width:{% divide 1 ev.overlap_nb percent="true"%};
-           left: {% divide ev.position ev.overlap_nb percent="true" %}">
+    style="top:{% to_rem ev.beghour base_height=tt_scale|default:2 %}rem;
+           height:{% to_rem ev.endhour ev.beghour base_height=tt_scale|default:2 %}rem;
+           width:{% divide 1 ev.overlap_nb percent='true' %};
+           left: {% divide ev.position ev.overlap_nb percent='true' %}">
     <div class="event-label" title="">{{ev.label}}</div>
     <div class="classroom">s. {{ev.classroom}}</div>
     <div class="teacher-name">{% for teach in ev.teachers %} {{teach.display_name}} {% endfor %}</div>

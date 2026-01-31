@@ -9,3 +9,4 @@ from .home import AgendaHome, agenda_menus
 from .inscriptions import (StudentInscriptionView, CancelInscriptionView,
     ManageInscriptionView, InscriptionListView, PastInscriptionsListView,
     DeleteInscriptionView)
+from .cscope import (ConsultCscopeView, PersoCscopeView, CscopeOverview)

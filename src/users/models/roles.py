@@ -198,10 +198,13 @@ class Subject(models.Model):
         blank=True)
 
     def __str__(self):
-        return self.name
+        return self.full_name()
     
     def full_name(self):
         return f"{self.name} {self.level.name}"
+    
+    def short_name(self):
+        return self.name.split("-")[0]
     
     @property
     def colle_dur(self) -> ColleTime:

@@ -76,7 +76,7 @@ class AttComputer():
     def __init__(self):
         """
         We sort users by level, which have a default value.
-        We use defaultdict in case not group have been created for default level
+        We use defaultdict in case no group have been created for default level
         """
         colle_groups = um.StudentColleGroup.objects.filter(
             user__is_active=True).select_related("user", "group__level")
@@ -160,7 +160,7 @@ class AttendanceField():
         if obj is None:
             return self # to access att_computer by class attribute
         val = getattr(obj, self.private_name)
-        level = getattr(obj, "level", um.get_default_level(instance=True))
+        level = obj.get_level()
         if "all" in val:
             all_groups = self.att_computer.all_groups.get(level, "")
             return val.replace("all", all_groups)
@@ -169,7 +169,7 @@ class AttendanceField():
     def __set__(self, obj, value):
         att_list = value.split(",")
         setattr(obj, self.private_name, value)
-        level = getattr(obj, "level", um.get_default_level(instance=True))
+        level = obj.get_level()
         att = self.att_computer(att_list, level=level)
         obj.attendants.set(att)
         # take care of cached props. 
