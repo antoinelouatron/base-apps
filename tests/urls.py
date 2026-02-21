@@ -5,4 +5,5 @@ from django.urls import path, include
 
 urlpatterns += [
     path("archives/", include(("base_archives.urls", "archives"))),
+    path("import/", include("bulkimport.urls", namespace="import")),
 ]

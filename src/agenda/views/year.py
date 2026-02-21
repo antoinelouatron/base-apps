@@ -58,13 +58,25 @@ class WeekNumberApi(mixins.JSONResponseMixin, views.View):
     def post(self, request):
         try:
             data = json.loads(request.body)
+            cps = am.CollePlanning.objects.filter(week__active=True).select_related("week")
+            cp_dic = {cp: cp.week.nb for cp in cps}
             with transaction.atomic():
+                cps = cps.select_for_update()
                 for d in data:
                     w = am.Week.objects.get(pk=d["id"])
                     w.label = d["label"]
                     w.nb = d["nb"]
                     w.save()
-                return self.ok({})
+                week_mapping = {w.nb: w for w in am.Week.objects.filter(active=True)}
+                changed_cps = []
+                for cp, nb in cp_dic.items():
+                    if nb in week_mapping:
+                        cp.week = week_mapping[nb]
+                        changed_cps.append(cp)
+                    else:
+                        raise ValueError(f"Le numéro de semaine {nb} n'existe pas.")
+                am.CollePlanning.objects.bulk_update(changed_cps, ["week"])
+            return self.ok({})
         except Exception as e:
             # import traceback
             # traceback.print_exception(e)

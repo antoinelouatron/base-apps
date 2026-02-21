@@ -219,6 +219,11 @@ class TestBaseEvent(WithWeeks):
 
 class TestAttendance(WithWeeks):
 
+    def setUp(self):
+        super().setUp()
+        self.level = um.Level.objects.create(name="TestLevel")
+        self.subject = um.Subject.objects.create(name="Math", level=self.level)
+
     def test_grouper(self):
         grouper = am.attendance.Grouper()
         self.assertEqual(len(grouper.explode_range('1-2')), 2)
@@ -241,14 +246,16 @@ class TestAttendance(WithWeeks):
         ev1 = am.BaseEvent.objects.create(
             begin=b,
             end=b + datetime.timedelta(0,60*60*2),
-            label=""
+            label="",
+            level=self.level
         )
         for i in range(1,4):
             # 3 groups
             for j in range(3):
                 # of 3 students
-                um.User.objects.create_student(username=f"user{3*i+j}", colle_group=i)
-        um.User.objects.create_teacher(title="M.", last_name="moi", first_name="a")
+                um.User.objects.create_student(username=f"user{3*i+j}", colle_group=i, level=self.level)
+        um.User.objects.create_teacher(title="M.", last_name="moi", first_name="a",
+                subject=self.subject)
         self.assertEqual(ev1.attendants.count(), 0)
         self.assertEqual(ev1._attendance_string, "")
         ev1.attendance_string = "1-3"
@@ -268,13 +275,14 @@ class TestAttendance(WithWeeks):
         ev1 = am.BaseEvent.objects.create(
             begin=b,
             end=b + datetime.timedelta(0,60*60*2),
-            label=""
+            label="",
+            level=self.level
         )
         for i in range(1,4):
             # 3 groups
             for j in range(3):
                 # of 3 students
-                um.User.objects.create_student(username=f"user{3*i+j}", colle_group=i)
+                um.User.objects.create_student(username=f"user{3*i+j}", colle_group=i, level=self.level)
         ev1.attendance_string = "1-3"
         self.assertEqual(ev1.attendants.count(), 9)
         self.assertEqual(ev1._attendance_string, "1-3")
@@ -338,6 +346,8 @@ class TestCompatibility(TestCase):
         end = today + datetime.timedelta(50)
         gen.generate_between(today, end)
         cls.monday = today
+        cls.level = um.Level.objects.create(name="Level1")
+        cls.subject = um.Subject.objects.create(name="Subject1", level=cls.level)
     
     def test_compatibility_object(self):
         c = compatibility.Compatibility(True)
@@ -348,7 +358,8 @@ class TestCompatibility(TestCase):
         ev1 = am.BaseEvent.objects.create(
             begin=begin,
             end=begin + datetime.timedelta(0,60*60*2),
-            label=""
+            label="",
+            level=self.level,
         )
         with self.assertRaises(ValueError):
             compatibility.Compatibility(False)
@@ -356,13 +367,14 @@ class TestCompatibility(TestCase):
             compatibility.Compatibility(False, ev1)
         with self.assertRaises(ValueError):
             compatibility.Compatibility(False, ev1, ev1)
-        user=um.User.objects.create_teacher(username="a")
+        user=um.User.objects.create_teacher(username="a", subject=self.subject)
         c = compatibility.Compatibility(False, ev1, ev1, user=user)
         self.assertTrue(c)
         ev2 = am.BaseEvent.objects.create(
             begin=begin,
             end=begin + datetime.timedelta(0,60*60*2),
-            label=""
+            label="",
+            level=self.level,
         )
         c = compatibility.Compatibility(False, ev1, ev2, user)
         self.assertFalse(c)
@@ -375,20 +387,22 @@ class TestCompatibility(TestCase):
         ev1 = am.BaseEvent.objects.create(
             begin=begin,
             end=begin + datetime.timedelta(0,60*60*2),
-            label=""
+            label="",
+            level=self.level,
         )
         ev2 = am.BaseEvent.objects.create(
             begin=begin+ datetime.timedelta(0,60*60),
             end=begin + datetime.timedelta(0,60*60*3),
-            label=""
+            label="",
+            level=self.level,
         )
 
-        um.User.objects.create_student(username="user1", colle_group=1)
-        um.User.objects.create_student(username="user2", colle_group=1)
+        um.User.objects.create_student(username="user1", colle_group=1, level=self.level)
+        um.User.objects.create_student(username="user2", colle_group=1, level=self.level)
         self.assertTrue(attendance.AttComputer.changed_groups)
         ev1.attendance_string = "1"
         self.assertFalse(attendance.AttComputer.changed_groups)
-        um.User.objects.create_student(username="user3", colle_group=2)
+        um.User.objects.create_student(username="user3", colle_group=2, level=self.level)
         ev2.attendance_string = "2"
 
         self.assertTrue(ev1.compatible(ev2), msg="same time, user OK")
@@ -413,7 +427,8 @@ class TestCompatibility(TestCase):
         ev3 = am.BaseEvent.objects.create(
             begin=begin + datetime.timedelta(1,60*60),
             end=begin + datetime.timedelta(1,60*60*3),
-            label=""
+            label="",
+            level=self.level,
         )
 
         ev3.attendance_string = "1,2"
@@ -429,12 +444,14 @@ class TestCompatibility(TestCase):
         ev1 = am.BaseEvent.objects.create(
             begin=begin,
             end=begin + datetime.timedelta(0,60*60*2),
-            label=""
+            label="",
+            level=self.level
         )
         ev2 = am.BaseEvent.objects.create(
             begin=begin+ datetime.timedelta(0,60*60),
             end=begin + datetime.timedelta(0,60*60*3),
-            label=""
+            label="",
+            level=self.level
         )
 
         self.assertTrue(ev1 < ev2)
@@ -445,9 +462,9 @@ class TestCompatibility(TestCase):
         self.assertEqual(ev1, ev1)
 
         # periodic comparison
-        ev1 = am.PeriodicEvent.objects.create(begweek=0, endweek=35, subject="math",
+        ev1 = am.PeriodicEvent.objects.create(begweek=0, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(8), endhour=time(10))
-        ev2 = am.PeriodicEvent.objects.create(begweek=0, endweek=35, subject="math",
+        ev2 = am.PeriodicEvent.objects.create(begweek=0, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(9), endhour=time(10))
         self.assertTrue(ev1 < ev2)
         self.assertTrue(ev1 <= ev2)
@@ -457,15 +474,15 @@ class TestCompatibility(TestCase):
         self.assertEqual(ev1, ev1)
     
     def test_periodic_compatible(self):
-        ev1 = am.PeriodicEvent.objects.create(begweek=0, endweek=35, subject="math",
+        ev1 = am.PeriodicEvent.objects.create(begweek=0, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(8), endhour=time(10))
         ev1.save()
         self.assertIn(ev1.day_label, str(ev1))
         users = [
-            um.User.objects.create_student(username=str(i), colle_group=1)
+            um.User.objects.create_student(username=str(i), colle_group=1, level=self.level)
             for i in range(3)]
         ev1.attendance_string = "1"
-        ev2 = am.PeriodicEvent.objects.create(begweek=0, endweek=35, subject="math",
+        ev2 = am.PeriodicEvent.objects.create(begweek=0, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(8), endhour=time(10))
         ev2.save()
         ev2.attendance_string = "1"
@@ -487,7 +504,8 @@ class TestCompatibility(TestCase):
         ev2.day = 0
         with self.assertRaises(ValidationError):
             ev2.attendance_string = "M. moi"
-        um.User.objects.create_teacher(title="M.", last_name="moi", first_name="M")
+        um.User.objects.create_teacher(title="M.", last_name="moi", first_name="M",
+                subject=self.subject)
         ev2.attendance_string = "M. moi"
         #ev2 = am.PeriodicEvent.objects.get(pk=ev2.pk)  # account for cached property
         self.assertTrue(ev2.compatible(ev1, [u.pk for u in users[1:]]),
@@ -519,13 +537,14 @@ class TestCompatibility(TestCase):
         ev1 = am.BaseEvent.objects.create(
             begin=begin,  # monday
             end=begin + datetime.timedelta(0,2*60*60),
-            label="")
+            label="",
+            level=self.level,)
         self.assertIsNotNone(ev1.week)
         self.assertEqual(ev1.week.nb, 1)
         users = [um.User.objects.create(username=str(i)) for i in range(4)]
         ev1.attendants.set(users)
         ev2 = am.PeriodicEvent.objects.create(
-            begweek=1, endweek=35, subject="subject", periodicity=2,
+            begweek=1, endweek=35, subj=self.subject, periodicity=2,
             day=0, beghour=time(8), endhour=time(10))
         ev2.attendants.set(users)
         occ = ev2.get_for_week(ev1.week)
@@ -558,13 +577,14 @@ class TestCompatibility(TestCase):
         self.assertTrue(ev1.compatible(ev2), "compatible day")
     
     def test_colleplanning(self):
-        teacher = um.User.objects.create_teacher(title="M.", last_name="moi", first_name="moi")
+        teacher = um.User.objects.create_teacher(title="M.", last_name="moi",
+            first_name="moi", subject=self.subject)
         for i in range(3):
             um.User.objects.create_student(username=str(i), colle_group=1)
             
         self.assertTrue(attendance.AttComputer.changed_groups)
         cev = am.ColleEvent.objects.create(beghour=time(8), endhour=time(10),
-            teacher=teacher, day=0, subject="Math")
+            teacher=teacher, day=0, subj=self.subject)
         week = am.Week.objects.filter(nb__gte=1).order_by("nb").first()
         self.assertEqual(week.nb, 1)
         cp = am.CollePlanning.objects.create(
@@ -573,7 +593,7 @@ class TestCompatibility(TestCase):
         )
         self.assertEqual(cp.colle_group, 1)
         pev = am.PeriodicEvent.objects.create(
-            begweek=1, endweek=35, subject="subject", periodicity=1,
+            begweek=1, endweek=35, subj=self.subject, periodicity=1,
             day=0, beghour=time(8), endhour=time(10))
         pev.attendance_string = "M. moi"
         self.assertFalse(cp.compatible(pev))
@@ -601,7 +621,9 @@ class TestCompatibility(TestCase):
         ev1 = am.BaseEvent.objects.create(
             begin=begin,  # monday
             end=begin + datetime.timedelta(0,2*60*60),
-            label="")
+            label="",
+            level=self.level,
+        )
         self.assertEqual(ev1.week, week)
         ev1.attendance_string = "M. moi"
         self.assertFalse(cp.compatible(ev1))
@@ -700,6 +722,11 @@ class TestSortedList(TestCase):
         self.assertEqual(len(list(L)), 1, "No empty span")
 
 class TestTimeTables(WithWeeks):
+
+    def setUp(self):
+        super().setUp()
+        self.level = um.Level.objects.create(name="Level1")
+        self.subject = um.Subject.objects.create(name="Subject1", level=self.level)
     
     def test_compat_tt(self):
         # we want to test numbers of incompatibilities found
@@ -709,14 +736,13 @@ class TestTimeTables(WithWeeks):
         # first create some users
         teachers = [
             um.User.objects.create_teacher(username=f"teach{i}", title="M.",
-                first_name=f"{i}", last_name=f"{i}")
+                first_name=f"{i}", last_name=f"{i}", subject=self.subject)
             for i in (1,2)
         ]
         for i in (1,2):
-            um.User.objects.create_student(username=f"stud{i}", colle_group=i)
+            um.User.objects.create_student(username=f"stud{i}", colle_group=i, level=self.level)
         # attendance all
-        level = um.Level.objects.create(name="level1")
-        subject = um.Subject.objects.create(name="subject1", level=level)
+        subject = self.subject
         for d in range(5):
             ev = am.PeriodicEvent.objects.create(beghour=time(8+d), endhour=time(10+d),
                 day=d, begweek=1, endweek=10, periodicity=2, subj=subject)
@@ -804,28 +830,28 @@ class TestTimeTables(WithWeeks):
             beghour=time(16),
             endhour=time(17),
             day=1,
-            subject="math"
+            subj=self.subject
         ),
         am.ColleEvent.objects.create(
             teacher=teachers[1],
             beghour=time(16),
             endhour=time(17),
             day=1,
-            subject="math"
+            subj=self.subject
         ),
         am.ColleEvent.objects.create(
             teacher=teachers[0],
             beghour=time(15),
             endhour=time(16),
             day=2,
-            subject="math"
+            subj=self.subject
         ),
         am.ColleEvent.objects.create(
             teacher=teachers[1],
             beghour=time(15),
             endhour=time(16),
             day=2,
-            subject="math"
+            subj=self.subject
         )]
         cps = []
         for ev in colle_evs:
@@ -859,25 +885,29 @@ class TestTimeTables(WithWeeks):
             begin=begin,
             end=begin + datetime.timedelta(0,60*60*2),
             label="",
-            override=True
+            override=True,
+            level=self.level
         )
         bev1.attendance_string = "all"
         bev2 = am.BaseEvent.objects.create(
             begin=begin+ datetime.timedelta(0,60*60),
             end=begin + datetime.timedelta(0,60*60*3),
-            label=""
+            label="",
+            level=self.level
         )
         bev2.attendance_string = "all"
         bev3 = am.BaseEvent.objects.create(
             begin=begin+ datetime.timedelta(5),
             end=begin + datetime.timedelta(5,60*60*2),
             label="",
+            level=self.level
         )
         bev3.attendance_string = "all"
         bev4 = am.BaseEvent.objects.create(
             begin=begin+ datetime.timedelta(5,60*60),
             end=begin + datetime.timedelta(5,60*60*3),
-            label=""
+            label="",
+            level=self.level
         )
         bev4.attendance_string = "all"
         # one incompatible base event
@@ -892,11 +922,11 @@ class TestTimeTables(WithWeeks):
         self.assertEqual(len(tt.incomp), 14, "same + one periodic incomp + 1 bev")
     
     def test_display_tt(self):
-        ev1 = am.PeriodicEvent(begweek=0, endweek=35, subject="math",
+        ev1 = am.PeriodicEvent(begweek=0, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(8), endhour=time(10))
         ev1.save()
         for i in range(3):
-            um.User.objects.create_student(username=str(i), colle_group=1)
+            um.User.objects.create_student(username=str(i), colle_group=1, level=self.level)
         ev1.attendance_string = "1"
         tt = table.DisplayTimeTable([ev1])
         self.assertEqual(len(tt.days[0]), 1)
@@ -904,11 +934,12 @@ class TestTimeTables(WithWeeks):
         ts = am.TimeSpan(beghour=time(10), endhour=time(12), day=0)
         tt.add_span(ts)
         self.assertEqual(len(tt.days[0]), 2)
-        teacher = um.User.objects.create_teacher(title="M.", last_name="moi", first_name="moi")
+        teacher = um.User.objects.create_teacher(title="M.", last_name="moi",
+            first_name="moi", subject=self.subject)
            
         self.assertTrue(attendance.AttComputer.changed_groups)
         cev = am.ColleEvent.objects.create(beghour=time(15), endhour=time(16),
-            teacher=teacher, day=0, subject="Math")
+            teacher=teacher, day=0, subj=self.subject)
         self.assertEqual(self.weeks[0].nb, 1)
         cp = am.CollePlanning.objects.create(
             event=cev, week=self.weeks[0],
@@ -935,14 +966,16 @@ class TestTimeTables(WithWeeks):
         bev1 = am.BaseEvent.objects.create(
             begin=begin + datetime.timedelta(1),  # monday
             end=begin + datetime.timedelta(1, 2*60*60),
-            label="")
+            label="",
+            level=self.level)
         tt.add_base_ev(bev1)
         self.assertEqual(len(tt.days[0]), 5, "no override")
         self.assertEqual(len(tt.days[1]), 1, "no override")
         bev2 = am.BaseEvent.objects.create(
             begin=begin,  # monday
             end=begin + datetime.timedelta(1, 1*60*60),
-            label="")
+            label="",
+            level=self.level)
         tt.add_base_ev(bev2)
         self.assertEqual(len(tt.days[0]), 1, "full override")
         self.assertEqual(len(tt.days[1]), 2, "half override")
@@ -956,7 +989,8 @@ class TestTimeTables(WithWeeks):
         bev3 = am.BaseEvent.objects.create(
             begin=begin + datetime.timedelta(1, 60*60),  # monday
             end=begin + datetime.timedelta(1, 90*60),
-            label="")
+            label="",
+            level=self.level)
         tt = table.DisplayTimeTable()
         tt.add_base_ev(bev3)
         self.assertEqual(len(tt.days[0]), 0, "tuesday")
@@ -977,11 +1011,11 @@ class TestTimeTables(WithWeeks):
         self.assertEqual(day, 4)
     
     def test_span(self):
-        ev1 = am.PeriodicEvent(begweek=0, endweek=35, subject="math",
+        ev1 = am.PeriodicEvent(begweek=0, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(8), endhour=time(10))
         ev1.save()
         for i in range(3):
-            um.User.objects.create_student(username=str(i), colle_group=1)
+            um.User.objects.create_student(username=str(i), colle_group=1, level=self.level)
         ev1.attendance_string = "1"
         span = ev1.to_span()
         self.assertEqual(span.teachers, [])
@@ -989,7 +1023,8 @@ class TestTimeTables(WithWeeks):
         self.assertEqual(span.beghour, time(8))
         self.assertEqual(span.endhour, time(10))
         self.assertEqual(span.day, 0)
-        um.User.objects.create_teacher(title="M.", last_name="a", first_name="a")
+        um.User.objects.create_teacher(title="M.", last_name="a", first_name="a",
+            subject=self.subject)
         #ev1 = am.PeriodicEvent.objects.last()
         ev1.attendance_string = "1,M. a"
         span = ev1.to_span()
@@ -1006,13 +1041,13 @@ class TestTimeTables(WithWeeks):
         self.assertEqual(str(occ), "paire 1-8")
     
     def test_mergeable(self):
-        ev1 = am.PeriodicEvent(begweek=0, endweek=35, subject="math",
+        ev1 = am.PeriodicEvent(begweek=0, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(8), endhour=time(10))
         ev1.save()
         for i in range(3):
             um.User.objects.create_student(username=str(i), colle_group=i+1)
         ev1.attendance_string = "1"
-        ev2 = am.PeriodicEvent(begweek=1, endweek=35, subject="math",
+        ev2 = am.PeriodicEvent(begweek=1, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(8), endhour=time(10))
         ev2.save()
         ev2.attendance_string = "2"
@@ -1028,7 +1063,8 @@ class TestTimeTables(WithWeeks):
         self.assertEqual(len(ms1.attendances()), 2)
         self.assertIn("paire", ms1.attendances()[1])
         self.assertIn("impaire", ms1.attendances()[0])
-        um.User.objects.create_teacher(title="M.", last_name="a", first_name="a")
+        um.User.objects.create_teacher(title="M.", last_name="a", first_name="a",
+            subject=self.subject)
         ev1.attendance_string = "1,M. a"
         ms1 = table.MergeableSpan.from_ev(ev1)
         self.assertFalse(ms1.is_similar(ms2))
@@ -1051,8 +1087,9 @@ class TestTimeTables(WithWeeks):
         # same events on 3 weeks rotation
         triple = []
         for i in range(3):
-            ev = am.PeriodicEvent.objects.create(begweek=i+1, endweek=35, subject="math",
-                periodicity=3, day=0, beghour=time(8), endhour=time(10))
+            ev = am.PeriodicEvent.objects.create(begweek=i+1, endweek=35,
+                    subj=self.subject, periodicity=3, day=0, beghour=time(8),
+                    endhour=time(10))
             ev.attendance_string = "1" if i % 2 else "2"
             triple.append(ev)
             ms = table.MergeableSpan.from_ev(ev)
@@ -1062,9 +1099,9 @@ class TestTimeTables(WithWeeks):
                 self.assertTrue(ms.is_similar(msj))
         # 2 similar events, same time span as triple
         double = [
-            am.PeriodicEvent.objects.create(begweek=1, endweek=35, subject="math",
+            am.PeriodicEvent.objects.create(begweek=1, endweek=35, subj=self.subject,
                 periodicity=2, day=0, beghour=time(8), endhour=time(10)),
-            am.PeriodicEvent.objects.create(begweek=2, endweek=35, subject="math",
+            am.PeriodicEvent.objects.create(begweek=2, endweek=35, subj=self.subject,
                 periodicity=2, day=0, beghour=time(8), endhour=time(10))
         ]
         double[0].attendance_string = "3"
@@ -1083,9 +1120,10 @@ class TestTimeTables(WithWeeks):
             self.assertEqual(len(tt.days[0][i].occurences), tt.days[0][i].periodicity)
     
     def test_overlap_hours(self):
-        ev1 = am.PeriodicEvent.objects.create(begweek=1, endweek=35, subject="math",
+        ev1 = am.PeriodicEvent.objects.create(begweek=1, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(8), endhour=time(10))
-        ev2 = am.PeriodicEvent.objects.create(begweek=1, endweek=35, subject="physique",
+        subj2 = um.Subject.objects.create(name="Subject2", level=self.level)
+        ev2 = am.PeriodicEvent.objects.create(begweek=1, endweek=35, subj=subj2,
             periodicity=2, day=0, beghour=time(8), endhour=time(10))
         tt = table.PeriodicConstruction([ev1, ev2]) # overlaping
         self.assertEqual(len(tt.days[0]), 2)
@@ -1093,9 +1131,9 @@ class TestTimeTables(WithWeeks):
         for i in range(2):
             self.assertEqual(tt.days[0][i].overlap_nb, 2)
             self.assertEqual(tt.days[0][i].position, i)
-        ev3 = am.PeriodicEvent.objects.create(begweek=1, endweek=35, subject="math",
+        ev3 = am.PeriodicEvent.objects.create(begweek=1, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(9,30), endhour=time(11,30))
-        ev4 = am.PeriodicEvent.objects.create(begweek=1, endweek=35, subject="math",
+        ev4 = am.PeriodicEvent.objects.create(begweek=1, endweek=35, subj=self.subject,
             periodicity=2, day=0, beghour=time(10,30), endhour=time(12, 30))
         tt.add_evs([ev3, ev4])
         self.assertEqual(len(tt.days[0]), 4, "not similar")

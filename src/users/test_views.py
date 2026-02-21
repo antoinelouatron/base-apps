@@ -8,6 +8,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 from dev.test_data import CreateUserMixin
 from dev.test_view import TestURL, TestCase, JsonURL
 from users.models import User, ColleGroup
+import users.models as um
 
 class SeeAsViewTest(TestCase):
     @classmethod
@@ -95,10 +96,25 @@ class SeeAsViewTest(TestCase):
 class TestImportUsers(TestCase, CreateUserMixin):
     def setUp(self):
         self.create_users()
+        level = self.level = um.get_default_level(instance=True)
+        subjects = {
+            "Mathématiques": {"duree": 10, "periode": "SEMAINE"},
+            "Physique": {"duree": 10, "periode": "SEMAINE"},
+            "SII": {"duree": 10, "periode": "SEMAINE"},
+            "Anglais": {"duree": 10, "periode": "SEMAINE"},
+            "Français": {"duree": 10, "periode": "SEMESTRE"},
+            "Informatique": {"duree": 0, "periode": "SEMAINE"},
+            "TIPE": {"duree": 0, "periode": "SEMESTRE"}
+        }
+        for subj_name, attrs in subjects.items():
+            um.Subject.objects.get_or_create(
+                name=subj_name,
+                level=level,
+            )
     
-    def test_import_users(self):
+    def test_import_teachers(self):
         self.assertEqual(User.objects.count(), 3)
-        url = TestURL(self, "import", "users", status=403)
+        url = TestURL(self, "import", "teachers", status=403)
         url.test()
         url.set_user(self.staff_user)
         url.status = 200
@@ -107,8 +123,12 @@ class TestImportUsers(TestCase, CreateUserMixin):
         with open(fpath, "rb") as upl_file:
             url.data = {
                 "_encoding": "utf8",
-                "_name_mapping_2": "title",
-                "teacher": True,
+                "_name_mapping_0": "first_name",
+                "_name_mapping_1": "last_name",
+                "_name_mapping_2": "email",
+                "_name_mapping_3": "title",
+                "_name_mapping_4": "level",
+                "_name_mapping_5": "subject",
                 "import_file": InMemoryUploadedFile(
                     upl_file, None, "teachers.json",
                     "text/plain", fpath.stat().st_size, "utf-8"
@@ -120,8 +140,8 @@ class TestImportUsers(TestCase, CreateUserMixin):
             ctx = resp.context
             messages = list(ctx["messages"])
             messages = [m.message for m in messages]
-            self.assertIn("11 créé(s)", messages)
-            self.assertEqual(User.objects.count(), 14, "11 more")
+            self.assertIn("6 créé(s)", messages)
+            self.assertEqual(User.objects.count(), 9, "6 more")
     
     def test_import_students(self):
         self.assertEqual(User.objects.filter(student=True).count(), 0)
@@ -134,8 +154,11 @@ class TestImportUsers(TestCase, CreateUserMixin):
         with open(fpath, "rb") as upl_file:
             url.data = {
                 "_encoding": "utf8",
-                "teacher": False,
-                "student": True,
+                "_name_mapping_0": "first_name",
+                "_name_mapping_1": "last_name",
+                "_name_mapping_2": "email",
+                "_name_mapping_3": "colle_group",
+                "level": str(self.level.pk),
                 "import_file": InMemoryUploadedFile(
                     upl_file, None, "etudiants-pt.csv",
                     "text/plain", fpath.stat().st_size, "utf-8"

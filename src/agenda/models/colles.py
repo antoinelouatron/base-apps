@@ -93,7 +93,14 @@ class CollePlanning(models.Model, compatibility.EventCompatibility, events.ToSpa
 
     class Meta:
         verbose_name = "Colle"
-        unique_together = ("event", "week")
+        constraints = [
+            models.UniqueConstraint(
+                fields=["event", "week"],
+                name="unique_event_week",
+                deferrable=models.Deferrable.DEFERRED
+            )
+        ]
+        # unique_together = ("event", "week")
     
     timeline_template = "agenda/timeline/colle.html"
 

@@ -4,7 +4,7 @@
     <tr class="">
         <th class="{{first_col_width}} border left-0 z-20 bg-surface1 sticky left-0 top-0">{{ table.row_label }} {% if not skip_colnames %}\ {{ table.col_label }}{%endif%}</th>
         {% for col_name in table.col_names %}
-            <th class="min-w-10 border bg-surface1 sticky top-0">{{ col_name }}</th>
+            <th class="min-w-10 border bg-surface1 sticky top-0">{{ col_name|safe }}</th>
         {% endfor %}
     </tr>
 </thead>

@@ -21,7 +21,7 @@
     </form>
     </div>
 </div>
-{% with wfull=True modal_id="cscope" modal_title="Colloscope {{level.name}}" %}
+{% with wfull=True modal_id="cscope" modal_title="Colloscope "|add:level.name %}
 {% include "components/modal.html" %}
 {% endwith %}
 {% endblock content %}

@@ -95,10 +95,12 @@ class MyUserManager(UserManager):
         """
         return self.filter(roles__s__contains={level.pk: True})
 
-    def teachers(self, subject: umr.Subject):
+    def teachers(self, subject: umr.Subject|None=None):
         """
         Return a queryset of teachers for the given subject.
         """
+        if subject is None:
+            return self.exclude(roles__t={})
         return self.filter(roles__t__contains={subject.pk: True})
     
     def secretaries(self):

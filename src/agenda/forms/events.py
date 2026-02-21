@@ -13,6 +13,10 @@ class BaseAttendanceForm(filter_qs.FilterQuerySetForm):
 
     _attendance_string = forms.CharField(label="Participants", required=False)
 
+    def __init__(self, *args, level: um.Level = None, **kwargs):
+        self.level = level
+        super().__init__(*args, **kwargs)
+
     def clean__attendance_string(self):
         """
         Clean the attendance string. It should be a comma-separated list of
@@ -20,7 +24,7 @@ class BaseAttendanceForm(filter_qs.FilterQuerySetForm):
         """
         att_str = self.cleaned_data["_attendance_string"]
         # compute attendance once, hacking the descriptor
-        am.AttendanceEvent.attendance_string.att_computer(att_str.split(","))
+        am.AttendanceEvent.attendance_string.att_computer(att_str.split(","), level=self.level)
         # can raise ValidationError if the string is not valid
         return att_str
 
@@ -143,6 +147,10 @@ class PeriodicImport(FileImportForm):
             raise forms.ValidationError("La classe doit être renseignée")
         self.subjects = self._get_subject_dict(self.level)
         return self.level
+    
+    def get_extra_form_kwargs(self):
+        # Si le formulaire n'est pas valide, il se peut que self.level ne soit pas défini, dans ce cas on retourne None pour éviter une erreur d'attribut
+        return {"level": getattr(self, "level", None)}
 
 class BaseEventForm(BaseAttendanceForm):
 

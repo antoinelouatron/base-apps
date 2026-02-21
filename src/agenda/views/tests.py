@@ -87,6 +87,50 @@ class TestYear(TestCase, test_data.CreateUserMixin):
         url.msg = "No such week"
         url.test(content_type="application/json")
     
+    def test_week_manage_cp(self):
+        url = test_view.JsonURL(self, "agenda", "weeks_update", status=403, method="post")
+        url.test(forbidden=True)
+        url.set_user(self.staff_user)
+        # create some weeks and CollePlanning
+        gen = am.HolidayGenerator()
+        today = datetime.date.today()
+        today = datetime.date(today.year, 12, 25) # we're in holiday
+        # make today a monday
+        today = today + datetime.timedelta(-today.weekday())
+        end = today + datetime.timedelta(10)
+        week1, week2 = gen.generate_between(today, end, True)
+        week1.nb = 1
+        week1.active = True
+        week1.save()
+        week2.nb = 2
+        week2.active = True
+        week2.save()
+        event = am.ColleEvent.objects.create(
+            day=0,
+            beghour=timezone.make_aware(datetime.datetime.combine(week1.begin, datetime.time(8))),
+            endhour=timezone.make_aware(datetime.datetime.combine(week1.begin, datetime.time(10))),
+            classroom="A",
+            teacher=self.users[0]
+        )
+        cg = um.ColleGroup.objects.create(nb=1)
+        cp1 = am.CollePlanning.objects.create(week=week1, event=event, group=cg)
+        cp2 = am.CollePlanning.objects.create(week=week2, event=event, group=cg)
+        self.assertEqual(am.CollePlanning.objects.filter(week__active=True).count(), 2)
+        url.data = [
+            {"id": week1.id, "label": "week1", "nb": 2},
+            {"id": week2.id, "label": "week2", "nb": 1},
+        ]
+        url.status = 200
+        url.test(content_type="application/json")
+        cp1.refresh_from_db()
+        cp2.refresh_from_db()
+        week1.refresh_from_db()
+        week2.refresh_from_db()
+        self.assertEqual(week1.nb, 2)
+        self.assertEqual(week2.nb, 1)
+        self.assertEqual(cp1.week, week2)
+        self.assertEqual(cp2.week, week1)
+    
     def test_home(self):
         url = test_view.TestURL(self, "agenda", "index", status=403)
         url.test()
@@ -380,14 +424,17 @@ class TestApi(TestCase, UsersAndWeeks):
                 ),
                 "level": level.pk
             }
-            create_subjects(level)
+            subjs = create_subjects(level)
+            for t in self.teachers:
+                t.roles.add(um.AtomicRole.create(teacher=True, subject=subjs[0]))
+                t.save()
             # redirect
             url.test(follow=True)
             self.assertTrue(am.PeriodicEvent.objects.count() > 0)
         # check agenda
         level = um.get_default_level(instance=True)
         url = test_view.JsonURL(self, "agenda", "check_agenda", status=403,
-            kwargs={"level_id": level.pk})
+            kwargs={"pk": level.pk})
         url.test(forbidden=True)
         url.set_user(self.staff_user)
         url.status = 200
@@ -615,7 +662,10 @@ class TestEventManage(TestCase, UsersAndWeeks):
                 ),
                 "level": level.pk
             }
-            create_subjects(level)
+            subjs = create_subjects(level)
+            for t in self.teachers:
+                t.roles.add(um.AtomicRole.create(teacher=True, subject=subjs[0]))
+                t.save()
             # redirect
             resp = url.test(follow=True)
             self.assertTrue(am.PeriodicEvent.objects.count() > 0)
@@ -658,7 +708,10 @@ class TestEventManage(TestCase, UsersAndWeeks):
                 ),
                 "level": level.pk
             }
-            create_subjects(level)
+            subjs = create_subjects(level)
+            for t in self.teachers:
+                t.roles.add(um.AtomicRole.create(teacher=True, subject=subjs[0]))
+                t.save()
             # redirect
             resp = url2.test(follow=True)
             self.assertTrue(am.PeriodicEvent.objects.count() > 0)

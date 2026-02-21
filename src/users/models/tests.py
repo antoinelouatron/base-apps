@@ -275,6 +275,20 @@ class TestUserManager(CreateUserMixin, TestCase):
         students = um.User.objects.students(self.level)
         self.assertIn(user, students)
         self.assertEqual(students.count(), 1)
+    
+    def test_teachers(self):
+        user1, user2 = self.users[:2]
+        user1.roles.add(um.AtomicRole.create(teacher=True,
+            subject=self.subject.pk))
+        user1.save()
+        user2.roles.add(um.AtomicRole.create(teacher=True,
+            subject=um.Subject.objects.create(name="Other Subject",
+                level=self.level))
+        )
+        user2.save()
+        self.assertEqual(um.User.objects.teachers(self.subject).count(), 1)
+        self.assertTrue(um.User.objects.count() > 2)
+        self.assertEqual(um.User.objects.teachers().count(), 2)
 
     def test_multiple(self):
         user1 = um.User.objects.first()

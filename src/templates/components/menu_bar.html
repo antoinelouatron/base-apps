@@ -1,9 +1,17 @@
-<div class="w-full bg-surface2 flex flex-nowrap">
-<div></div>
+<div class="w-full bg-surface2 flex flex-nowrap justify-between">
 <nav>
-{% for item in top_menu %}
-
+{% for button in top_left_buttons %}
+{{button}}
 {% endfor %}
 </nav>
-<div></div>
+<nav>
+{% for item in top_menu %}
+{{item}}
+{% endfor %}
+</nav>
+<div>
+{% for button in top_right_buttons %}
+{{button}}
+{% endfor %}
+</div>
 </div>

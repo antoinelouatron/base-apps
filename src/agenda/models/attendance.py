@@ -60,11 +60,6 @@ class Grouper():
 
 grouper = Grouper()
 
-def create_default_dict(teachers_dict: dict) -> dict:
-    d = {"all": []}
-    d.update(teachers_dict)
-    return d
-
 class AttComputer():
     """
     Convert a list of comma-separated values to a User list
@@ -81,12 +76,20 @@ class AttComputer():
         colle_groups = um.StudentColleGroup.objects.filter(
             user__is_active=True).select_related("user", "group__level")
         colle_groups = colle_groups.order_by("group__level")
-        teachers_obj = um.User.objects.filter(teacher=True, is_active=True)
+        teachers_obj = um.User.objects.teachers().filter(is_active=True)
+        subjects = um.Subject.objects.select_related("level").only("pk", "level")
+        subj_dict = {str(s.pk): s.level for s in subjects}
         # convert to dict for fast access
-        teachers_dict = {t.display_name: [t] for t in teachers_obj}        
+        self.att_dict = collections.defaultdict(lambda: {"all": []})
+        teachers_dict = {} #{t.display_name: [t] for t in teachers_obj}
+        for t in teachers_obj:
+            for s, b in t.roles[um.AtomicRole.TEACHER].items():
+                if b:
+                    level = subj_dict[s]
+                    teachers_dict[level] = teachers_dict.get(level, {})
+                    teachers_dict[level][t.display_name] = [t]
+                    self.att_dict[level][t.display_name] = [t]
         self.teachers_dict = teachers_dict
-        self.att_dict = collections.defaultdict(
-            lambda: create_default_dict(teachers_dict))
         all_students = {}
         for cg in colle_groups:
             att_dict = self.att_dict[cg.group.level]
@@ -98,8 +101,8 @@ class AttComputer():
             all_students[cg.group.level] = by_level
             self.att_dict[cg.group.level] = att_dict
         for level, att_dict in self.att_dict.items():
-            att_dict["all"] = all_students[level]
-            att_dict.update(teachers_dict)
+            att_dict["all"] = all_students.get(level, [])
+            att_dict.update(teachers_dict.get(level, {}))
         self.all_groups = {}
         for cg in um.ColleGroup.objects.order_by("level", "nb"):
             self.all_groups[cg.level] = self.all_groups.get(cg.level, [])
@@ -115,7 +118,7 @@ class AttComputer():
         att_list = list(filter(lambda s: s != "", att_list))
         att = []
         if add_teachers:
-            att_list += list(self.teachers_dict.keys())
+            att_list += list(self.teachers_dict.get(level, {}).keys())
         # remove duplicates
         att_list = set(att_list)
         att_dict = self.att_dict[level]

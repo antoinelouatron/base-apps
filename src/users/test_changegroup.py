@@ -17,17 +17,27 @@ class LoadAllData(TestCase, CreateUserMixin):
     def setUp(self):
         self.create_users()
         return super().setUp()
+    
+    def _setup_subjects(self):
+        level = self.level = um.get_default_level(instance=True)
+        return create_subjects(level=level)
 
     def load_users(self):
         base_path = settings.TEST_BASE_DIR / "users" / "fixtures"
-        url = TestURL(self, "import", "users", status=302)
+        url = TestURL(self, "import", "teachers", status=302)
         url.set_user(self.staff_user)
         fpath = base_path / "teachers.json"
+        self._setup_subjects()
         with open(fpath, "rb") as upl_file:
             url.data = {
                 "_encoding": "utf8",
-                "_name_mapping_2": "title",
-                "teacher": True,
+                "_name_mapping_0": "first_name",
+                "_name_mapping_1": "last_name",
+                "_name_mapping_2": "email",
+                "_name_mapping_3": "title",
+                "_name_mapping_4": "level",
+                "_name_mapping_5": "subject",
+                #"teacher": True,
                 "import_file": InMemoryUploadedFile(
                     upl_file, None, "teachers.json",
                     "text/plain", fpath.stat().st_size, "utf-8"
@@ -36,14 +46,21 @@ class LoadAllData(TestCase, CreateUserMixin):
             # redirect
             url.method = "post"
             url.test()
+            self.assertEqual(um.User.objects.level(self.level).count(), 6)
         url = TestURL(self, "import", "users", status=302)
         url.set_user(self.staff_user)
         fpath = base_path / "etudiants-pt.csv"
+        level = um.get_default_level(instance=True)
         with open(fpath, "rb") as upl_file:
             url.data = {
                 "_encoding": "utf8",
-                "teacher": False,
-                "student": True,
+                #"teacher": False,
+                #"student": True,
+                "_name_mapping_0": "first_name",
+                "_name_mapping_1": "last_name",
+                "_name_mapping_2": "email",
+                "_name_mapping_3": "colle_group",
+                "level": level.id,
                 "import_file": InMemoryUploadedFile(
                     upl_file, None, "etudiants-pt.csv",
                     "text/plain", fpath.stat().st_size, "utf-8"
@@ -52,12 +69,16 @@ class LoadAllData(TestCase, CreateUserMixin):
             # redirect
             url.method = "post"
             url.test()
+            #url.status = 200
+            #resp = url.test()
+            #print(resp.context["form"].errors)
     
     def load_EDT(self):
         fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "edt.json"
         self.assertTrue(fpath.exists())
-        level = um.get_default_level(instance=True)
-        create_subjects(level)
+        self._setup_subjects()
+        from agenda.models.attendance import AttComputer
+        self.assertTrue(AttComputer.changed_groups)
         with open(fpath, "rb") as upl_file:
             upl_dict = {"import_file": InMemoryUploadedFile(
                 upl_file, None, "edt.json",
@@ -66,7 +87,7 @@ class LoadAllData(TestCase, CreateUserMixin):
             data = {
                 "_encoding": "utf8",
                 "_name_mapping_9": "attendance",
-                "level": level.id
+                "level": self.level.id
             }
             form = af.PeriodicImport(data, upl_dict)
             self.assertTrue(form.is_valid())
@@ -75,18 +96,19 @@ class LoadAllData(TestCase, CreateUserMixin):
     def load_colles(self, planning=True):
         fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "colles.csv"
         self.assertTrue(fpath.exists())
+        self._setup_subjects()
         with open(fpath, "rb") as upl_file:
             upl_dict = {"import_file": InMemoryUploadedFile(
                 upl_file, None, "colles.csv",
                 "text/plain", fpath.stat().st_size, "utf-8"
             )}
-            data = {"_encoding": "utf8"}
+            data = {"_encoding": "utf8", "level": self.level.id}
             form = af.ColleEventImport(data, upl_dict)
             self.assertTrue(form.is_valid())
             form.save()
-        fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "scope-pt.csv"
         if not planning:
             return
+        fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "scope-pt.csv"
         for nb in range(3, 26):
             am.Week.objects.create(nb=nb,
                 begin=datetime.date.today() + datetime.timedelta(7*(nb-3)),
@@ -98,14 +120,14 @@ class LoadAllData(TestCase, CreateUserMixin):
                 upl_file, None, "scope-pt.csv",
                 "text/plain", fpath.stat().st_size, "utf-8"
             )}
-            data = {"_encoding": "utf8"}
+            data = {"_encoding": "utf8", "level": self.level.id}
             form = af.CollePlanningImport(data, upl_dict)
             self.assertTrue(form.is_valid())
             form.save()
 
     def load_all(self, planning=True):
         self.load_users()
-        self.assertEqual(um.User.objects.count(), 3 + 11 + 34)
+        self.assertEqual(um.User.objects.count(), 3 + 6 + 34)
         self.load_EDT()
         self.assertEqual(am.PeriodicEvent.objects.count(), 49)
         self.load_colles(planning=planning)
@@ -151,12 +173,12 @@ class TestChangeAtt(LoadAllData):
         groups = list(um.ColleGroup.objects.order_by("nb"))
         td2 = am.PeriodicEvent.objects.get(
             beghour="14:00",
-            subject="math",
+            subj__name="Mathématiques",
             begweek=0
         )
         td = am.PeriodicEvent.objects.get(
             beghour="14:00",
-            subject="math",
+            subj__name="Mathématiques",
             begweek=1
         )
         attendants = set(td.attendants.all())

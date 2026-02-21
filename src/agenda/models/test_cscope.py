@@ -5,6 +5,7 @@ from django.conf import settings
 from django.core.files.uploadedfile import InMemoryUploadedFile
 
 import agenda.forms as af
+from agenda.forms.tests import create_subjects
 import agenda.models as am
 import agenda.models.cscope as cscope
 from dev.test_utils import TestCase
@@ -15,9 +16,14 @@ class TestCscopeTables(TestCase, CreateUserMixin):
 
     base_dir = settings.TEST_BASE_DIR / "agenda"
 
+    def setUp(self):
+        self.level, _ = um.Level.objects.get_or_create(name="PT")
+
     def import_scope(self):
-        self.create_students(16)
+        level = self.level
+        self.create_students(16, level=level)
         self.create_teachers(TEACHERS)
+        subjs = create_subjects(level)
         fpath = self.base_dir / "fixtures" / "colles.csv"
         self.assertTrue(fpath.exists())
         with open(fpath, "rb") as upl_file:
@@ -25,7 +31,7 @@ class TestCscopeTables(TestCase, CreateUserMixin):
                 upl_file, None, "colles.csv",
                 "text/plain", fpath.stat().st_size, "utf-8"
             )}
-            data = {"_encoding": "utf8"}
+            data = {"_encoding": "utf8", "level": level.id}
             form = af.ColleEventImport(data, upl_dict)
             self.assertTrue(form.is_valid())
             form.save()
@@ -42,7 +48,7 @@ class TestCscopeTables(TestCase, CreateUserMixin):
                 upl_file, None, "scope-pt.csv",
                 "text/plain", fpath.stat().st_size, "utf-8"
             )}
-            data = {"_encoding": "utf8"}
+            data = {"_encoding": "utf8", "level": level.id}
             form = af.CollePlanningImport(data, upl_dict)
             #print(form.errors)
             self.assertTrue(form.is_valid())
@@ -51,7 +57,7 @@ class TestCscopeTables(TestCase, CreateUserMixin):
     
     def test_table_construction(self):
         self.import_scope()
-        level = um.Level.objects.get(name="PT")
+        level = self.level
         group_table = cscope.GroupDataTable(level)
         group_table.set_week_range(3, 10)
         table = group_table.build_display_table()
@@ -60,6 +66,9 @@ class TestCscopeTables(TestCase, CreateUserMixin):
         event_table = cscope.EventDataTable(level)
         event_table.set_week_range(3, 10)
         event_table.set_group_range(1, 10)
+        event_table.fetch_data()
+        self.assertEqual(len(event_table.weeks), 8)
+        
         table = event_table.build_display_table()
         self.assertEqual(len(table.col_names), 10)
         self.assertEqual(len(table.row_names), 8)

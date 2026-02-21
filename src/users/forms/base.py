@@ -45,52 +45,52 @@ class UserPrefForm(forms.ModelForm):
             })
         }
 
-class UserAtomicForm(forms.ModelForm):
+# class UserAtomicForm(forms.ModelForm):
 
-    colle_group = forms.IntegerField(required=False)
+#     colle_group = forms.IntegerField(required=False)
 
-    class Meta:
-        model = um.User
-        fields = ["title", "first_name", "last_name", "email"]
+#     class Meta:
+#         model = um.User
+#         fields = ["title", "first_name", "last_name", "email"]
 
-    def clean(self):
-        cd = super().clean()
-        self.colle_group = cd.get("colle_group", None)
-        if self.colle_group is not None:
-            self.colle_group, _ = um.ColleGroup.objects.get_or_create(nb=self.colle_group, void=False)
-        return cd
+#     def clean(self):
+#         cd = super().clean()
+#         self.colle_group = cd.get("colle_group", None)
+#         if self.colle_group is not None:
+#             self.colle_group, _ = um.ColleGroup.objects.get_or_create(nb=self.colle_group, void=False)
+#         return cd
 
-    def post_save(self, commit=True):
-        inst = self.instance
+#     def post_save(self, commit=True):
+#         inst = self.instance
 
-        def save_group():
-            if self.colle_group is not None:
-                um.StudentColleGroup.objects.get_or_create(
-                    user=inst,
-                    group=self.colle_group
-                )
-        if not commit:
-            old_save_m2m = self.save_m2m
+#         def save_group():
+#             if self.colle_group is not None:
+#                 um.StudentColleGroup.objects.get_or_create(
+#                     user=inst,
+#                     group=self.colle_group
+#                 )
+#         if not commit:
+#             old_save_m2m = self.save_m2m
 
-            def save_m2m():
-                old_save_m2m()
-                save_group()
-            self.save_m2m = save_m2m
-        else:
-            save_group()
-        return inst
+#             def save_m2m():
+#                 old_save_m2m()
+#                 save_group()
+#             self.save_m2m = save_m2m
+#         else:
+#             save_group()
+#         return inst
 
-class ImportUsers(FileImportForm):
+# class ImportUsers(FileImportForm):
 
-    teacher = forms.BooleanField(required=False, label="Professeur")
-    student = forms.BooleanField(required=False, label="Élève")
+#     teacher = forms.BooleanField(required=False, label="Professeur")
+#     student = forms.BooleanField(required=False, label="Élève")
 
-    class Meta:
-        model = um.User
-        fields = ["teacher", "student"]
-        form = UserAtomicForm
-        auto_populate = True
-        name_fields = ["first_name", "last_name", "title", "email", "colle_group"]
+#     class Meta:
+#         model = um.User
+#         fields = ["teacher", "student"]
+#         form = UserAtomicForm
+#         auto_populate = True
+#         name_fields = ["first_name", "last_name", "title", "email", "colle_group"]
 
 
 class UserForm(forms.ModelForm):

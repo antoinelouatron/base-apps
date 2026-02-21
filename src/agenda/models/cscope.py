@@ -161,7 +161,7 @@ class GroupDataTable(DbScope):
         columns = [week for week in self.weeks]
         rows = list(self.events)
         table = DisplayTable(
-            colnames=[str(week.nb) + " " + week.begin.strftime("%d/%m") for week in columns],
+            colnames=[str(week.nb) + " <br/> " + week.begin.strftime("%d/%m") for week in columns],
             rownames=[EventDisplayWrapper([event]) for event in rows],
             rowlabel="Créneaux",
             collabel="Semaines"
@@ -213,6 +213,8 @@ class EventDataTable(DbScope):
             if planning.group.nb not in group_nb_to_idx:
                 continue
             week_nb = planning.week.nb
+            if week_nb not in week_nb_to_idx:
+                continue
             row_idx = week_nb_to_idx[week_nb]
             col_idx = group_nb_to_idx[planning.group.nb]
             data[row_idx][col_idx].append(planning.event)

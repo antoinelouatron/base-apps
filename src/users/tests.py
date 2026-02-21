@@ -6,6 +6,7 @@ from dev.test_utils import TestCase
 from dev.test_data import CreateUserMixin
 from dev.test_view import JsonURL, TestURL
 import users.forms as uf
+import users.forms.imports as ufi
 import users.models as um
 import users.permissions as up
 User = um.User
@@ -169,7 +170,11 @@ class TestUserAtomicForm(TestCase, CreateUserMixin):
             "email": "test@example.com",
             "colle_group": 1
         }
-        form = uf.UserAtomicForm(data=data)
+        level = um.get_default_level(instance=True)
+        role = um.AtomicRole.create(student=True, level=level)
+        form = ufi.UserAtomicForm(data=data, role=role)
+        # needed by post_save
+        form.master_form = ufi.BaseImportForm()
         self.assertTrue(form.is_valid(), "No commit, no user")
         user = form.save(commit=False)
         user = form.post_save(commit=False) # called by FileImportForm

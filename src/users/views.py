@@ -196,9 +196,21 @@ class UserListJson(LoginRequiredMixin, JSONResponseMixin, View):
 class ImportUsersView(bv.ModelImportView):
     model_name = "users"
     title_name = "Utilisateurs"
-    form_class = users.forms.ImportUsers
+    form_class = users.forms.StudentImportForm
 
 ImportUsersView.register("Utilisateurs")
+
+class ImportTeacherView(bv.ModelImportView):
+    model_name = "teachers"
+    title_name = "Enseignants"
+    form_class = users.forms.TeacherWithSubjectImportForm
+
+ImportTeacherView.register("Enseignants")
+
+class ImportColleursView(bv.ModelImportView):
+    model_name = "colleurs"
+    title_name = "Colleurs"
+    form_class = users.forms.ColleurWithSubjectImportForm
 
 class ListColleGroups(UserIsStaffMixin, ListView):
     template_name = "users/list_collegroups.html"

@@ -1,14 +1,13 @@
 import logging
 from django import forms
 
+from agenda.forms import events as afe
 import agenda.models as am
 from bulkimport.forms.importfile import FileImportForm
 import users.models as um
 
-class ColleEventAtomic(forms.ModelForm):
+class ColleEventAtomic(afe.PeriodicAtomic):
 
-    beghour = forms.TimeField(input_formats=["%H:%M:%S", "%H:%M", "%H"])
-    endhour = forms.TimeField(input_formats=["%H:%M:%S", "%H:%M", "%H"])
     subject = forms.CharField(required=False)
     teacher = forms.CharField(required=False)
     civilite = forms.CharField(required=False)
@@ -21,7 +20,7 @@ class ColleEventAtomic(forms.ModelForm):
     class Meta:
         model = am.ColleEvent
         fields = ["beghour", "endhour", "day",
-        "subject", "teacher", "classroom", "order", "abbrev"]
+        "subject", "teacher", "classroom", "order", "abbrev", "subj"]
 
     def clean_day(self):
         val = self.cleaned_data["day"]
@@ -38,7 +37,7 @@ class ColleEventAtomic(forms.ModelForm):
         """
         Defaults to a random subject and teacher
         """
-        cd = self.cleaned_data
+        cd = super().clean()
         teacher = um.User.objects.filter(
             title=cd.get("civilite", ""), last_name=cd.get("teacher", ""),
             teacher=True)
@@ -53,9 +52,16 @@ class ColleEventAtomic(forms.ModelForm):
                 title=cd["civilite"],first_name="")
         cd["teacher"] = teacher
         return cd
+    
+    def save(self, commit=True):
+        # pas besoin de calculer les participants
+        obj = super().save(commit=False)
+        if commit:
+            obj.save()
+        return obj
 
 
-class ColleEventImport(FileImportForm):
+class ColleEventImport(afe.PeriodicImport):
 
     class Meta:
         model = am.ColleEvent
@@ -119,22 +125,40 @@ class CollePlanningAtomic(forms.ModelForm):
 
 
 class CollePlanningImport(FileImportForm):
+    level = forms.ModelChoiceField(
+        queryset=am.Level.objects,
+        required=True,
+        label="Classe",
+        help_text="Classe à laquelle les événements seront associés"
+    )
 
     class Meta:
         model = am.CollePlanning
         name_fields = ["week", "event", "group"]
         form = CollePlanningAtomic
         auto_populate = True
+    
+    def clean_level(self):
+        self.level = self.cleaned_data.get("level")
+        if self.level is None:
+            raise forms.ValidationError("La classe doit être renseignée")
+        return self.level
 
     def get_extra_form_kwargs(self):
         if not hasattr(self, "_weeks"):
             self._weeks = list(am.Week.objects.filter(active=True))
         weeks = self._weeks
         if not hasattr(self, "_events"):
-            self._events = list(am.ColleEvent.objects.all())
+            if hasattr(self, "level"):
+                self._events = list(am.ColleEvent.objects.filter(subj__level=self.level))
+            else:
+                self._events = list()
         events = self._events
         if not hasattr(self, "_groups"):
-            self._groups = list(um.ColleGroup.objects.all())
+            if hasattr(self, "level"):
+                self._groups = list(um.ColleGroup.objects.filter(level=self.level))
+            else:
+                self._groups = list()
         groups = self._groups
         return {
             "weeks": weeks,
