@@ -24,25 +24,33 @@ class CreateUserMixin():
         for i in range(min, min+nb):
             self.students.append(
                 um.User.objects.create_student(username=f"student{i}",
-                    colle_group=(i+1), student=True, first_name="John",
+                    colle_group=(i+1), first_name="John",
                     last_name=f"Doe{i}", level=level)
             )
         return self.students
     
-    def create_teachers(self, teach_list: list[dict]):
+    def create_teachers(self, teach_list: list[dict], level=None):
         self.teachers = []
-        for teach_dist in teach_list:
+        if level is None:
+            level = um.get_default_level(instance=True)
+        for teach_dict in teach_list:
+            if "subject" in teach_dict:
+                subj = teach_dict["subject"]
+                if not isinstance(subj, um.Subject):
+                    teach_dict["subject"] = um.Subject.objects.get_or_create(
+                        level=level, name=subj
+                    )[0]  # get_or_create returns a tuple (obj, created), we only want the obj, so
             self.teachers.append(
-                um.User.objects.create_teacher(**teach_dist)
+                um.User.objects.create_teacher(**teach_dict)
             )
 
 TEACHERS = [
-    {"last_name": "Louatron", "first_name": "", "title": "M."},
-    {"last_name": "Thibierge", "first_name": "", "title": "M."},
-    {"last_name": "Agoutin", "first_name": "", "title": "Mme."},
-    {"last_name": "Bourdelle", "first_name": "", "title": "M."},
-    {"last_name": "Pigny", "first_name": "", "title": "M."},
-    {"last_name": "Levavasseur", "first_name": "", "title": "M."},
+    {"last_name": "Teacher1", "first_name": "", "title": "M.", "subject": "Mathématiques"},
+    {"last_name": "Teacher2", "first_name": "", "title": "M.", "subject": "Physique"},
+    {"last_name": "Teacher3", "first_name": "", "title": "Mme.", "subject": "Anglais"},
+    {"last_name": "Teacher4", "first_name": "", "title": "M.", "subject": "Français"},
+    {"last_name": "Teacher5", "first_name": "", "title": "M.", "subject": "SII"},
+    {"last_name": "Teacher6", "first_name": "", "title": "M.", "subject": "SII"},
 ]
 
 def create_formset_data(

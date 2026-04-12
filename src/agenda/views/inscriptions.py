@@ -7,6 +7,8 @@ ToDo and InscriptionEvent management.
 from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.db import transaction, models
+from django.shortcuts import get_object_or_404
+from django.views.generic.detail import SingleObjectMixin
 
 import agenda.forms.events as afe
 import agenda.models as am
@@ -14,6 +16,7 @@ import agenda.models.events as ame
 from agenda.views import events as ave
 from utils.views import DetailView, mixins, CreateUpdateView, ListView, DeleteView
 from utils import reverse, menu
+import users.models as um
 
 class BaseStudentInscriptionView(LoginRequiredMixin, mixins.JSONTemplateView, DetailView):
     model = am.InscriptionEvent
@@ -62,14 +65,15 @@ class CancelInscriptionView(BaseStudentInscriptionView):
             self.object.refresh_from_db()
             return self.ok({"inscr": self.object})
 
-def inscription_base_menu(request):
+def inscription_base_menu(request, level: um.Level) -> menu.MenuList:
     ml = menu.MenuList(title="Inscriptions")
     mi = menu.MenuItem("Liste", name="list",
-        url=reverse.reverse("agenda:inscription:list"))
+        url=reverse.reverse("agenda:inscription:list", kwargs={"pk": level.pk}))
     ml.append(mi)
     if request.user.teacher:
         mi = menu.MenuItem("Gérer", name="manage",
-            url=reverse.reverse("agenda:inscription:manage"))
+            url=reverse.reverse("agenda:inscription:manage",
+                kwargs={"level_pk": level.pk}))
         ml.append(mi)
     return ml
 
@@ -83,6 +87,13 @@ class ManageInscriptionView(mixins.UserIsTeacherMixin, ave.TimetableDisplayMixin
     template_name = "agenda/inscription_manage.html"
     SCRIPTS = ["inscription_manage"]
     
+    def get_level(self):
+        if not hasattr(self, "level"):
+            self.level = get_object_or_404(
+                um.Level, pk=self.kwargs["level_pk"]
+            )
+        return self.level
+
     def get_initial(self):
         # removed in form if we are editing an existing inscription, 
         # and current user.is_staff
@@ -91,6 +102,7 @@ class ManageInscriptionView(mixins.UserIsTeacherMixin, ave.TimetableDisplayMixin
     def get_form_kwargs(self):
         kwargs = super().get_form_kwargs()
         kwargs["teacher"] = self.request.user
+        kwargs["level"] = self.get_level()
         return kwargs
     
     def get_current_week(self):
@@ -116,20 +128,26 @@ class ManageInscriptionView(mixins.UserIsTeacherMixin, ave.TimetableDisplayMixin
         ctx["inscriptions"] = qs
         ctx["week"] = self.week
         ctx["min_size"] = "none"
+        ctx["level"] = self.get_level()
         return ctx
     
     def get_success_url(self):
         return self.request.path
     
     def get_all_menus(self, context):
-        ml = inscription_base_menu(self.request)
+        ml = inscription_base_menu(self.request, self.get_level())
         ml.mark_current("manage")
         return [ml]
     
     def get_breadcrumb(self, context):
         bd = super().get_breadcrumb(context)
         head = bd.pop()
-        bd.append(menu.MenuItem("Inscriptions", url=reverse.reverse("agenda:inscription:list")))
+        bd.append(menu.MenuItem(
+            "Inscriptions",
+            url=reverse.reverse(
+                "agenda:inscription:list",
+                kwargs={"pk": self.get_level().pk}
+            )))
         bd.append(head)
         return bd
 
@@ -166,21 +184,28 @@ class ManageInscriptionView(mixins.UserIsTeacherMixin, ave.TimetableDisplayMixin
             return super().form_invalid(form)
         return super().post(request, *args, **kwargs)
 
-class InscriptionListView(LoginRequiredMixin, ListView):
+class InscriptionListView(LoginRequiredMixin, SingleObjectMixin, ListView):
     model = am.InscriptionEvent
     template_name = "agenda/inscription_list.html"
     PAGE_TITLE = "Créneaux disponibles sur inscription"
     SCRIPTS = ["inscriptions"]
     raise_exception = True
 
+    def get_object(self, queryset=None):
+        self.object = super().get_object(um.Level.objects.all())
+        return self.object
+
     def get_queryset(self):
+        level = self.level = self.get_object()
         qs = am.InscriptionEvent.objects.open().order_by("begin", "teacher")
+        qs = qs.select_related("level")
         qs = qs.prefetch_related("attendants")
         qs = qs.annotate(
             has_user=models.Count(
                 "attendants", filter=models.Q(attendants=self.request.user)
             )
         )
+        qs = qs.filter(level=level)
         return qs.distinct()
     
     def _regroup_inscriptions(self, qs):
@@ -201,6 +226,7 @@ class InscriptionListView(LoginRequiredMixin, ListView):
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
         ctx["inscriptions"] = self._regroup_inscriptions(ctx["object_list"])
+        ctx["level"] = self.level
         if not hasattr(self.request, "content_ctx") or not self.request.content_ctx.config.inscription:
             messages.info(
                 self.request,
@@ -210,15 +236,18 @@ class InscriptionListView(LoginRequiredMixin, ListView):
     
     def popns(self, **ctx):
         ns = super().popns(**ctx)
+        level = self.object
         ns["urls"] = {
             "add": reverse.without_trailing_pk("agenda:inscription:add"),
             "cancel": reverse.without_trailing_pk("agenda:inscription:cancel"),
-            "seeAll": reverse.reverse("agenda:inscription:list_passed"),
+            "seeAll": reverse.reverse(
+                "agenda:inscription:list_passed",
+                kwargs={"pk": level.pk}),
         }
         return ns
     
     def get_all_menus(self, context):
-        ml = inscription_base_menu(self.request)
+        ml = inscription_base_menu(self.request, self.level)
         ml.mark_current("list")
         return [ml]
 
@@ -239,12 +268,15 @@ class DeleteInscriptionView(mixins.UserIsTeacherMixin, DeleteView):
     template_name = "agenda/inscription_delete.html"
     http_method_names = ["get", "post"]
     SCRIPTS = ["home"]
-    
+    object : am.InscriptionEvent
+
     def get_success_url(self):
-        return reverse.reverse("agenda:inscription:manage")
+        return reverse.reverse(
+            "agenda:inscription:manage",
+            kwargs={"level_pk": self.object.level.pk})
     
     def get_all_menus(self, context):
-        ml = inscription_base_menu(self.request)
+        ml = inscription_base_menu(self.request, self.object.level)
         mi = menu.MenuItem("Supprimer", name="delete",
             url=reverse.reverse("agenda:inscription:delete",kwargs={"pk": self.object.pk}))
         ml.append(mi)

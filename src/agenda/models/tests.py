@@ -301,24 +301,29 @@ class TestColle(TestCase):
         # make today a monday
         today = today + datetime.timedelta(-today.weekday())
         end = today + datetime.timedelta(50)
-        cls.weeks = gen.generate_between(today, end)
+        cls.weeks = gen.generate_between(today, end, active=True)
         cls.monday = today
+        cls.level, _ = um.Level.objects.get_or_create(name="PT")
+        cls.subject, _ = um.Subject.objects.get_or_create(name="Math", level=cls.level)
 
     def test_event(self):
         teacher = um.User.objects.create_teacher(username="a")
         cev = am.ColleEvent.objects.create(beghour=time(8), endhour=time(10),
-            teacher=teacher, day=0, subject="Math")
+            teacher=teacher, day=0, subj=self.subject)
         self.assertEqual(cev.short_name(), "lundi 08:00-10:00")
         self.assertEqual(len(str(cev)), len(cev.short_name()) + 1)
     
     def test_colleplanning(self):
         teacher = um.User.objects.create_teacher(username="a")
+        teacher.roles.add(um.AtomicRole.create(colleur=True, subject=self.subject))
+        teacher.save()
         cev = am.ColleEvent.objects.create(beghour=time(8), endhour=time(10),
-            teacher=teacher, day=0, subject="Math")
+            teacher=teacher, day=0, subj=self.subject)
         cps = []
         studs = []
         for i in range(3):
-            st = um.User.objects.create_student(username=f"stud{i}", colle_group=i+1)
+            st = um.User.objects.create_student(username=f"stud{i}",
+                colle_group=i+1, level=self.level)
             cg = st.studentcollegroup.first()
             cps.append(
                 am.CollePlanning.objects.create(
@@ -332,7 +337,37 @@ class TestColle(TestCase):
         self.assertEqual(am.CollePlanning.objects.for_user(anon).count(), 0)
         self.assertIn("groupe 1, semaine 1", str(cps[0]))
         self.assertEqual(cps[0].attendance_string, "1,")
-        
+    
+    def test_before_after(self):
+        teacher = um.User.objects.create_teacher(username="a")
+        cev = am.ColleEvent.objects.create(beghour=time(8), endhour=time(10),
+            teacher=teacher, day=1, subj=self.subject)
+        cps = []
+        for i in range(3):
+            cps.append(
+                am.CollePlanning.objects.create(
+                    event=cev, week=self.weeks[i])
+            )
+        res = am.CollePlanning.objects.before(self.monday)
+        res_after = am.CollePlanning.objects.after(self.monday)
+        self.assertEqual(res.count(), 0)
+        self.assertEqual(res_after.count(), 3)
+        res = am.CollePlanning.objects.before(self.monday + datetime.timedelta(days=1))
+        res_after = am.CollePlanning.objects.after(self.monday + datetime.timedelta(days=1))
+        self.assertEqual(res.count(), 1)
+        self.assertEqual(res_after.count(), 2)
+        res = am.CollePlanning.objects.before(self.monday + datetime.timedelta(days=7))
+        res_after = am.CollePlanning.objects.after(self.monday + datetime.timedelta(days=7))
+        self.assertEqual(res.count(), 1) # un nouveau lundi, la colle est le mardi
+        self.assertEqual(res_after.count(), 2)
+        res = am.CollePlanning.objects.before(self.monday + datetime.timedelta(days=8))
+        res_after = am.CollePlanning.objects.after(self.monday + datetime.timedelta(days=8))
+        self.assertEqual(res.count(), 2)
+        self.assertEqual(res_after.count(), 1)
+        res = am.CollePlanning.objects.before(self.monday + datetime.timedelta(days=15))
+        res_after = am.CollePlanning.objects.after(self.monday + datetime.timedelta(days=15))
+        self.assertEqual(res.count(), 3)
+        self.assertEqual(res_after.count(), 0)
 
 class TestCompatibility(TestCase):
 
@@ -1242,8 +1277,8 @@ class TestInscription(WithWeeks, CreateUserMixin):
     def test_manager_compat(self):
         self.create_users()
         self.create_students()
-        self.staff_user.teacher = True
-        am.InscriptionEvent.objects.create(
+        #self.staff_user.teacher = True
+        inst = am.InscriptionEvent.objects.create(
             begin=timezone.now()+ datetime.timedelta(0, 60*60*1),
             end=timezone.now() + datetime.timedelta(0, 60*60*2),
             label="",
@@ -1251,6 +1286,14 @@ class TestInscription(WithWeeks, CreateUserMixin):
             max_students=2,
             is_full=True
         )
+        subject = um.Subject.objects.create(
+            name="test",
+            level=inst.level,
+        )
+        self.staff_user.roles.add(
+            um.AtomicRole.create(teacher=True, subject=subject)
+        )
+        self.staff_user.save()
         self.assertEqual(am.InscriptionEvent.objects.open().count(), 1)
         self.assertEqual(am.InscriptionEvent.objects.closed().count(), 0)
         # self.assertEqual(am.InscriptionEvent.objects.open(self.students[0]).count(), 0)

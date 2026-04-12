@@ -10,7 +10,7 @@ from django.core.files.uploadedfile import InMemoryUploadedFile
 import agenda.forms as af
 import agenda.models as am
 from dev.test_utils import TestCase
-from dev.test_data import CreateUserMixin
+from dev.test_data import CreateUserMixin, TEACHERS
 import users.models as um
 
 class TestPeriodicForm(TestCase, CreateUserMixin):
@@ -65,7 +65,7 @@ class TestPeriodicForm(TestCase, CreateUserMixin):
         self.assertTrue(form.is_valid())
     
     def test_non_existing_teacher(self):
-        self.assertEqual(um.User.objects.filter(teacher=True, is_active=True).count(), 0)
+        self.assertEqual(um.User.objects.teachers().filter(is_active=True).count(), 0)
         data = {
             "begweek": 0,
             "endweek": 35,
@@ -82,14 +82,14 @@ class TestPeriodicForm(TestCase, CreateUserMixin):
         self.assertIn("_attendance_string", form.errors)
         self.assertEqual(am.PeriodicEvent.objects.count(), 0)
 
-TEACHERS = [
-    {"last_name": "Louatron", "first_name": "", "title": "M."},
-    {"last_name": "Thibierge", "first_name": "", "title": "M."},
-    {"last_name": "Agoutin", "first_name": "", "title": "Mme."},
-    {"last_name": "Bourdelle", "first_name": "", "title": "M."},
-    {"last_name": "Pigny", "first_name": "", "title": "M."},
-    {"last_name": "Levavasseur", "first_name": "", "title": "M."},
-]
+# TEACHERS = [
+#     {"last_name": "Louatron", "first_name": "", "title": "M."},
+#     {"last_name": "Thibierge", "first_name": "", "title": "M."},
+#     {"last_name": "Agoutin", "first_name": "", "title": "Mme."},
+#     {"last_name": "Bourdelle", "first_name": "", "title": "M."},
+#     {"last_name": "Pigny", "first_name": "", "title": "M."},
+#     {"last_name": "Levavasseur", "first_name": "", "title": "M."},
+# ]
 
 def create_subjects(level):
     # see fixture file
@@ -108,8 +108,8 @@ class TestImportForms(TestCase, CreateUserMixin):
 
     def setUp(self):
         #self.create_students(16)
-        self.create_teachers(TEACHERS)
         self.level = um.Level.objects.create(name="3e")
+        self.create_teachers(TEACHERS, level=self.level)
         self.subjs = create_subjects(self.level)
         for t in self.teachers:
             t.roles.add(um.AtomicRole.create(teacher=True, subject=self.subjs[0]))
@@ -253,6 +253,9 @@ class TestImportForms(TestCase, CreateUserMixin):
 
 class TestToDoForm(TestCase, CreateUserMixin):
 
+    def setUp(self):
+        self.level = um.Level.objects.create(name="testlevel")
+
     def test_attendance_string(self):
         self.create_students(3)
         data = {
@@ -276,7 +279,7 @@ class TestToDoForm(TestCase, CreateUserMixin):
     
     def test_student_field(self):
         self.create_users(3)
-        self.create_students(3)
+        self.create_students(3, level=self.level)
         data = {
             "date": datetime.date.today(),
             "label": "test",
@@ -284,7 +287,7 @@ class TestToDoForm(TestCase, CreateUserMixin):
             "students": True,
             "msg_level": 1
         }
-        form = af.ToDoForm(data=data)
+        form = af.ToDoForm(data=data, level=self.level)
         self.assertTrue(form.is_valid())
         inst = form.save()
         self.assertEqual(inst.attendants.count(), 3)

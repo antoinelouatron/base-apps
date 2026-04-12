@@ -23,8 +23,8 @@ urlpatterns = [
     path("gerer-utilisateurs/ajouter-role/", uv.AddRoleView.as_view(), name="add_role"),
     path("gerer-utilisateurs/enlever-role/", uv.RemoveRoleView.as_view(),
         name="remove_role"),
-    path("groupes-de-colle/", uv.ListColleGroups.as_view(), name="collegroups"),
-    path("groupes-de-colle/changer/", uv.ChangeColleGroups.as_view(),
+    path("groupes-de-colle/<int:pk>/", uv.ListColleGroups.as_view(), name="collegroups"),
+    path("groupes-de-colle/changer/<int:pk>/", uv.ChangeColleGroups.as_view(),
         name="change_collegroups"),
     path("api/", include((api, "api"))),
 ]

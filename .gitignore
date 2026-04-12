@@ -22,4 +22,5 @@ tests/.tox/
 tests/.env
 tests/backup/
 tests/.coverage
+tests/backups/
 

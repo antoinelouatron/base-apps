@@ -15,7 +15,7 @@
 {% endwith %}
 {% if user.teacher %}
 <div class="lg:hidden">
-<a href="{% url 'agenda:inscription:manage' %}">Ajouter/gérer</a> mes séances.
+<a href="{% url 'agenda:inscription:manage' level_pk=level.pk %}">Ajouter/gérer</a> mes séances.
 </div>
 {% endif %}
 <div class="p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">

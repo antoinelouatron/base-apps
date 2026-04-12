@@ -185,7 +185,7 @@ class PermissionCheck():
         self.url = url
         self.only_with_role = set(only_with_role)
     
-    def test(self, ok_status=200, **test_kwargs):
+    def test(self, ok_status=200, level=None, subject=None, **test_kwargs):
         """
         Test the url with users with and without the required role.
         """
@@ -193,8 +193,8 @@ class PermissionCheck():
             username="testuser_permcheck",
             email="testuser_permcheck@example.com",
         )
-        level = um.Level.objects.create(name="level_permcheck")
-        subject = um.Subject.objects.create(level=level, name="subject_permcheck")
+        level = level or um.Level.objects.create(name="level_permcheck")
+        subject = subject or um.Subject.objects.create(level=level, name="subject_permcheck")
         self.url.set_user(None)
         base_status = self.url.status
         self.url.status = 403

@@ -3,9 +3,10 @@ date: 2024-04-02
 
 Take care of AttComputer reset when colle groups change.
 """
-from agenda.models.attendance import AttComputer
+
 
 def reset_computer(sender, **kwargs):
+    from agenda.models.attendance import AttComputer
     AttComputer.changed_groups = True
 
 # pre_save

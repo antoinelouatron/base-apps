@@ -116,9 +116,18 @@ class IsRefTeacher(Permission):
     def has_permission(self, user, level=None, subject=None) -> bool:
         return user.is_authenticated and user.roles.is_ref_teacher(level)
 
+class IsSuperUser(Permission):
+    """
+    Permission for superusers.
+    """
+    
+    def has_permission(self, user, level=None, subject=None) -> bool:
+        return user.is_authenticated and user.is_superuser
+
 STUDENT = IsStudent()
 TEACHER = IsTeacher()
 COLLEUR = IsColleur()
 SECRETARY = IsSecretary()
 SCHOOL_ADMIN = IsAdmin()
 REF_TEACHER = IsRefTeacher()
+SUPERUSER = IsSuperUser()

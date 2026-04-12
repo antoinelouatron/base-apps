@@ -25,10 +25,14 @@ class TestModels(TestCase):
         u2 = um.User.objects.create(last_name="moi", first_name="aa")
         self.assertEqual(u2.username, "moaa")
         self.assertFalse(u2.teacher)
-        u3 = um.User.objects.create_teacher(last_name="moi", first_name="aa")
+        level = um.Level.objects.create(name="L1")
+        subject = um.Subject.objects.create(name="S1", level=level)
+        u3 = um.User.objects.create_teacher(last_name="moi", first_name="aa",
+            subject=subject)
         self.assertTrue(u3.teacher)
         self.assertEqual(u3.username, "maa")
-        u3 = um.User.objects.create_teacher(last_name="moi", first_name="aa")
+        u3 = um.User.objects.create_teacher(last_name="moi", first_name="aa",
+            subject=subject,)
         self.assertTrue(u3.teacher)
         self.assertNotEqual(u3.username, "maa")
         self.assertEqual(len(u3.username), 8, "default random length")
@@ -68,7 +72,8 @@ class TestModels(TestCase):
         self.assertEqual(len(user.username), 8)
     
     def test_signal(self):
-        st1 = um.User.objects.create_student(username="student")
+        level = um.Level.objects.create(name="L1")
+        st1 = um.User.objects.create_student(username="student", level=level)
         self.assertFalse(st1.teacher)
         self.assertTrue(st1.student)
         st1.is_active = False
@@ -96,16 +101,19 @@ class TestModels(TestCase):
         self.assertFalse(user2 >= user1)
 
     def test_le_teacher(self):
-        user1 = User(is_superuser=False, is_staff=False, teacher=True)
-        user2 = User(is_superuser=False, is_staff=False, teacher=False)
+        user1 = User(is_superuser=False, is_staff=False)
+        user2 = User(is_superuser=False, is_staff=False)
+        level = um.Level.objects.create(name="L1")
+        subject = um.Subject.objects.create(name="S1", level=level)
+        user1.roles.add(um.AtomicRole.create(teacher=True, subject=subject))
         self.assertTrue(user1 >= user2)
         self.assertTrue(user2 <= user1)
         self.assertFalse(user1 <= user2)
         self.assertFalse(user2 >= user1)
 
     def test_le_default(self):
-        user1 = User(is_superuser=False, is_staff=False, teacher=False)
-        user2 = User(is_superuser=False, is_staff=False, teacher=False)
+        user1 = User(is_superuser=False, is_staff=False)
+        user2 = User(is_superuser=False, is_staff=False)
         self.assertTrue(user1 >= user2)
         self.assertTrue(user2 <= user1)
         self.assertTrue(user1 <= user2)

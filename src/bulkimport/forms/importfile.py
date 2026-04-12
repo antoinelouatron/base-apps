@@ -118,6 +118,13 @@ class FileImportForm(with_metaclass(FileImportFormMeta, dfm.ModelForm)):
     This class must have at least all fields listed in name_fields.
     It can define a post_save(self, commit=True) method (same argument as save),
     and a pre_clean(self).
+    - name_attrs : dict field_name -> dict of attributes to add to the corresponding field in the form.
+    - auto_populate : depecated, une cls.DEFAULT_NAME_MAPPING for more clarity.
+
+    Optionnal class attribute:
+    - DEFAULT_NAME_MAPPING: dict field_name -> default column name in data file.
+    If defined, it must contain all fields listed in Meta.name_fields, and will
+    
 
     Each created atomic form instance will have a master_form attribute
     which is a reference to the FileImportForm instance.
@@ -143,6 +150,33 @@ class FileImportForm(with_metaclass(FileImportFormMeta, dfm.ModelForm)):
         initial="utf8",
         label=_("Encodage du fichier"),
         required=False)
+    
+    @classmethod
+    def _get_initial_name_mapping(cls):
+        """
+        Correspondance de nom par défaut.
+        Toutes les valeurs de Meta.name_fields doivent 
+        être présentes dans DEFAULT_NAME_MAPPING pour que la correspondance
+        soit proposée.
+        """
+        if not hasattr(cls, "DEFAULT_NAME_MAPPING"):
+            return None
+        for name in cls.Meta.name_fields:
+            if name not in cls.DEFAULT_NAME_MAPPING:
+                print("Missing", name)
+                return None
+        return {
+            f"_name_mapping_{i}": cls.DEFAULT_NAME_MAPPING[name]
+            for i, name in enumerate(cls.Meta.name_fields)
+        }
+
+    def __init__(self, *args, **kwargs):
+        initial = kwargs.get("initial", {})
+        nm = self._get_initial_name_mapping()
+        if nm is not None:
+            initial.update(_name_mapping=list(nm.values()))
+        kwargs["initial"] = initial
+        super().__init__(*args, **kwargs)
 
     def _create_model_key_mapping(self, d, key_mapping):
         # key_mapping is the value of name_mapping field.

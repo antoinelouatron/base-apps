@@ -55,28 +55,40 @@ class MyUserManager(UserManager):
         return super().create_user(username, **kwargs)
     
     def create_teacher(self, subject=None, **kwargs):
-        kwargs["teacher"] = True
+        #kwargs["teacher"] = True
         inst = self.create(**kwargs)
         if subject is not None:
             inst.roles.add(umr.AtomicRole.create(teacher=True, subject=subject))
             inst.save()
         return inst
+    
+    def create_colleur(self, subject=None, **kwargs):
+        inst = self.create(**kwargs)
+        if subject is not None:
+            inst.roles.add(umr.AtomicRole.create(colleur=True, subject=subject))
+            inst.save()
+        return inst
 
     def create_student(self, colle_group=None, level=None, **kwargs):
-        kwargs["student"] = True
+        #kwargs["student"] = True
         inst = self.create(**kwargs)
+        re_save = False
+        if level is not None:
+            inst.roles.add(umr.AtomicRole.create(student=True, level=level))
+            re_save = True
         if colle_group is not None:
             if level is None:
                 group_obj = ColleGroup.objects.get_or_create(nb=colle_group, void=False)[0]
             else:
                 group_obj = ColleGroup.objects.get_or_create(nb=colle_group,
                     level=level, void=False)[0]
-                inst.roles.add(umr.AtomicRole.create(student=True, level=level))
-                inst.save()
+                re_save = True
             StudentColleGroup.objects.create(
                 group=group_obj,
                 user=inst
             )
+        if re_save:
+            inst.save()
         return inst
     
     def level(self, level: umr.Level):
@@ -84,16 +96,19 @@ class MyUserManager(UserManager):
         Return a queryset of users in the given level.
         """
         filter = models.Q(roles__s__contains={level.pk: True})
+        filter |= models.Q(roles__rt__contains={level.pk: True})
         for subject in umr.Subject.objects.filter(level=level):
             filter |= models.Q(roles__t__contains={subject.pk: True})
             filter |= models.Q(roles__c__contains={subject.pk: True})
-        return self.filter(filter).order_by("roles", "last_name", "first_name")
+        return self.filter(filter, is_active=True).order_by("roles", "last_name", "first_name")
 
-    def students(self, level: umr.Level):
+    def students(self, level: umr.Level|None=None):
         """
         Return a queryset of students in the given level.
         """
-        return self.filter(roles__s__contains={level.pk: True})
+        if level is None:
+            return self.exclude(roles__s__={})
+        return self.filter(is_active=True, roles__s__contains={level.pk: True})
 
     def teachers(self, subject: umr.Subject|None=None):
         """
@@ -101,25 +116,27 @@ class MyUserManager(UserManager):
         """
         if subject is None:
             return self.exclude(roles__t={})
-        return self.filter(roles__t__contains={subject.pk: True})
+        return self.filter(is_active=True, roles__t__contains={subject.pk: True})
     
     def secretaries(self):
         """
         Return a queryset of secretaries.
         """
-        return self.filter(roles__sec=True)
+        return self.filter(is_active=True, roles__sec=True)
     
     def school_admins(self):
         """
         Return a queryset of school admins.
         """
-        return self.filter(roles__sa=True)
+        return self.filter(is_active=True, roles__sa=True)
     
-    def colleurs(self, subject: umr.Subject):
+    def colleurs(self, subject: umr.Subject|None=None):
         """
         Return a queryset of colleurs for the given subject.
         """
-        return self.filter(roles__c__contains={str(subject.pk): True})
+        if subject is None:
+            return self.exclude(roles__c={})
+        return self.filter(is_active=True, roles__c__contains={str(subject.pk): True})
 
 class User(AbstractUser):
     # type hint
@@ -151,10 +168,18 @@ class User(AbstractUser):
     roles = umr.RolesField(verbose_name="Rôles", blank=True)
     is_chaire_sup = models.BooleanField(default=False)
     # legacy role management, for content app
-    teacher = models.BooleanField(default=False) # PT/math-info
-    student = models.BooleanField(default=False)
+    # teacher = models.BooleanField(default=False) # PT/math-info
+    # student = models.BooleanField(default=False)
     
     objects = MyUserManager()
+
+    @property
+    def teacher(self):
+        return self.roles.is_teacher()
+    
+    @property
+    def student(self):
+        return self.roles.is_student()
 
     def save(self, *args, **kwargs):
         if self.username is None or self.username == "":

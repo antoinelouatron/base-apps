@@ -230,31 +230,32 @@ class MenuMixin(ActionsMixin):
         
         Only used in account views.
         """
-        user = self.user
-        account_item = menu.MenuItem(title="Mon compte", name="account")
-        colles = menu.MenuItem(title="Mes colles", name="colles",
-                            display=user.teacher)
-        agenda = menu.MenuItem(title="Agenda", name="agenda",
-                            display=user.is_staff)
-        imports = menu.MenuItem(title="Importer", name="import", display=user.is_superuser)
-        corrige = menu.MenuItem(title="Corriger", name="correction", display=user.is_staff)
-        groups = menu.MenuItem(title="Groupes de colles", name="collegroups",
-            display=user.is_staff)
-        archives = menu.MenuItem(title="Archives", name="archives", display=user.is_staff)
+        menus = menu.MenuList()
+        # user = self.user
+        # account_item = menu.MenuItem(title="Mon compte", name="account")
+        # colles = menu.MenuItem(title="Mes colles", name="colles",
+        #                     display=user.teacher)
+        # agenda = menu.MenuItem(title="Agenda", name="agenda",
+        #                     display=user.is_staff)
+        # imports = menu.MenuItem(title="Importer", name="import", display=user.is_superuser)
+        # corrige = menu.MenuItem(title="Corriger", name="correction", display=user.is_staff)
+        # groups = menu.MenuItem(title="Groupes de colles", name="collegroups",
+        #     display=user.is_staff)
+        # archives = menu.MenuItem(title="Archives", name="archives", display=user.is_staff)
 
-        menus = menu.MenuList([account_item, colles, agenda, imports, corrige, groups,
-            archives],
-            title="Actions")
+        # menus = menu.MenuList([account_item, colles, agenda, imports, corrige, groups,
+        #     archives],
+        #     title="Actions")
 
-        account_item.set_url("users:account")
-        #colles.set_url("grades:colles:list")
-        agenda.set_url("agenda:index")
-        imports.set_url("import:index")
-        #corrige.set_url("grades:bareme:list")
-        groups.set_url("users:collegroups")
-        #archives.set_url("archives:create")
+        # account_item.set_url("users:account")
+        # #colles.set_url("grades:colles:list")
+        # agenda.set_url("agenda:index")
+        # imports.set_url("import:index")
+        # #corrige.set_url("grades:bareme:list")
+        # groups.set_url("users:collegroups")
+        # #archives.set_url("archives:create")
         
-        menus.id_attr = "account-menu-left"
+        # menus.id_attr = "account-menu-left"
         return menus
     
     def get_all_menus(self, context):

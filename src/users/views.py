@@ -6,12 +6,13 @@ import logging
 from typing import Any, Iterable
 
 from django import forms, urls
-from django.contrib.auth.mixins import LoginRequiredMixin, UserPassesTestMixin
+from django.contrib.auth.mixins import LoginRequiredMixin
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib import messages
 from django.db import transaction
 from django.http import QueryDict
 from django.shortcuts import get_object_or_404, redirect
+from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import UpdateView
 
 from bulkimport import views as bv
@@ -22,7 +23,8 @@ import users.models as um
 from utils import menu
 import utils.reverse
 from utils.views import TemplateView, ListView, View, FormView
-from utils.views.mixins import BaseJsonView, JSONFormView, JSONResponseMixin, UserIsStaffMixin, PermissionMixin
+from utils.views.mixins import (BaseJsonView, JSONFormView, JSONResponseMixin,
+    UserIsStaffMixin, PermissionMixin)
 
 class EditUserPref(LoginRequiredMixin, JSONFormView, UpdateView):
     
@@ -61,23 +63,21 @@ class EditUserPref(LoginRequiredMixin, JSONFormView, UpdateView):
         form.instance.user = self.request.user
         return super().form_valid(form)
 
-class SeeAsView(UserPassesTestMixin, ListView):
+class SeeAsView(PermissionMixin, ListView):
     template_name = "users/see_as.html"
     model = um.User
     raise_exception = True
     SCRIPTS = ["see_as"]
     PAGE_TITLE = "Espionnage"
-
-    def test_func(self):
-        b = self.request.user.is_authenticated
-        return b and (self.request.user.teacher or self.request.user.is_staff)
+    PERMISSION = up.SUPERUSER
     
-    def get_queryset(self):
-        filter = {}
-        if not self.request.user.is_superuser:
-            filter["is_staff"] = False
-        return self.model.objects.filter(**filter).order_by(
-            "student", "last_name", "first_name")
+    # def get_queryset(self):
+    #     filter = {}
+    #     if not self.request.user.is_superuser:
+    #         filter["is_staff"] = False
+    #         filter["role__sec"] = False
+    #         filter["role__sa"] = False
+    #     return self.model.objects.filter(**filter).order_by("last_name", "first_name")
     
     def clean_get_params(self, referer):
         path_parts = referer.split("?")
@@ -212,7 +212,7 @@ class ImportColleursView(bv.ModelImportView):
     title_name = "Colleurs"
     form_class = users.forms.ColleurWithSubjectImportForm
 
-class ListColleGroups(UserIsStaffMixin, ListView):
+class ListColleGroups(UserIsStaffMixin, SingleObjectMixin, ListView):
     template_name = "users/list_collegroups.html"
     SCRIPTS = ["home"]
     PAGE_TITLE = "Groupes de colles"
@@ -228,11 +228,12 @@ class ListColleGroups(UserIsStaffMixin, ListView):
         return bd
 
     def get_queryset(self):
-        qs = um.ColleGroup.objects.order_by("nb")
+        self.level = self.object = self.get_object(um.Level.objects.all())
+        qs = um.ColleGroup.objects.filter(level=self.level).order_by("nb")
         qs = qs.prefetch_related("studentcollegroup_set__user")
         return qs
 
-class ChangeColleGroups(UserIsStaffMixin, FormView):
+class ChangeColleGroups(UserIsStaffMixin, SingleObjectMixin, FormView):
 
     template_name = "users/change_attendance.html"
     SCRIPTS = ["home"]
@@ -246,7 +247,8 @@ class ChangeColleGroups(UserIsStaffMixin, FormView):
     def get_breadcrumb(self, ctx=None):
         bd = super().get_breadcrumb(ctx)
         bd.append(menu.MenuItem(
-            title="Groupes", url=urls.reverse("users:collegroups")
+            title="Groupes", url=urls.reverse("users:collegroups",
+                        kwargs={"pk": self.level.pk})
         ))
         bd.append(menu.MenuItem(title="Renuméroter"))
         return bd
@@ -256,7 +258,8 @@ class ChangeColleGroups(UserIsStaffMixin, FormView):
         return self.change_att.get_formset(**kwargs)
 
     def dispatch(self, request, *args, **kwargs):
-        self.change_att = change_collegroups.ChangeAttendance()
+        self.level = self.object = self.get_object(um.Level.objects.all())
+        self.change_att = change_collegroups.ChangeAttendance(level=self.level)
         return super().dispatch(request, *args, **kwargs)
 
     def form_valid(self, form):
@@ -264,7 +267,7 @@ class ChangeColleGroups(UserIsStaffMixin, FormView):
             with transaction.atomic():
                 groups = form.save()
                 self.change_att.update_attendance(groups)
-                return redirect(urls.reverse("users:collegroups"))
+                return redirect(urls.reverse("users:collegroups", kwargs={"pk": self.level.pk}))
         except:
             form._non_form_errors.append(forms.ValidationError("Erreur de sauvegarde."))
             return self.form_invalid(form)

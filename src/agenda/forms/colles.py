@@ -39,13 +39,12 @@ class ColleEventAtomic(afe.PeriodicAtomic):
         """
         cd = super().clean()
         teacher = um.User.objects.filter(
-            title=cd.get("civilite", ""), last_name=cd.get("teacher", ""),
-            teacher=True)
+            title=cd.get("civilite", ""), last_name=cd.get("teacher", ""))
         if teacher.count() == 1:
             teacher = teacher[0]
         elif teacher.count() > 1:
             self.logger.info('Multiple user "%s" "%s"', cd["civilite"], cd["teacher"])
-            teacher = um.User.objects.filter(teacher=True)[0]
+            teacher = um.User.objects.teachers()[0]
         else:
             self.logger.info('Missing teacher "%s" "%s"', cd["civilite"], cd["teacher"])
             teacher = um.User.objects.create_teacher(last_name=cd["teacher"],

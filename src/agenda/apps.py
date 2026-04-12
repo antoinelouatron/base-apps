@@ -7,11 +7,11 @@ class AgendaConfig(AppConfig):
 
     def ready(self):
         from . import signals
-        User = apps.get_model("users.User")
+        #User = apps.get_model("users.User")
         ColleGroup = apps.get_model("users.ColleGroup")
         BaseEvent = apps.get_model("agenda.BaseEvent")
-        post_delete.connect(signals.reset_computer, sender=User)
+        #post_delete.connect(signals.reset_computer, sender=User)
         post_delete.connect(signals.reset_computer, sender=ColleGroup)
-        post_save.connect(signals.reset_computer, sender=User)
+        #post_save.connect(signals.reset_computer, sender=User)
         post_save.connect(signals.reset_computer, sender=ColleGroup)
         pre_save.connect(signals.check_week, sender=BaseEvent)

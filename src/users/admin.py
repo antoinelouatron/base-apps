@@ -4,9 +4,26 @@ from django.contrib.auth.admin import UserAdmin
 from .models import (User, StudentColleGroup, ColleGroup, Level, Subject,
     AddDataTemplate)
 
+class RoleFilter(admin.SimpleListFilter):
+    title = "Rôle"
+    parameter_name = "role"
+
+    def lookups(self, request, model_admin):
+        return (
+            ("teacher", "Enseignant"),
+            ("student", "Étudiant"),
+        )
+
+    def queryset(self, request, queryset):
+        if self.value() == "teacher":
+            return queryset.filter(roles__t__isnull=False)
+        elif self.value() == "student":
+            return queryset.filter(roles__s__isnull=False)
+        return queryset
+
 class MyUserAdmin(UserAdmin):
     list_display = UserAdmin.list_display + ("title", "display_name", "teacher", "student", "is_active", "last_login")
-    list_filter = UserAdmin.list_filter + ("teacher", "student")
+    list_filter = UserAdmin.list_filter + (RoleFilter,)
     fieldsets = UserAdmin.fieldsets + (
         (None, {"fields": ("title", "teacher", "student")}),
     )

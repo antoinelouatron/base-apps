@@ -4,7 +4,7 @@
 <div class="border p-1 m-1">
     <h5>{{self.inscription.label}} {% if self.inscription.teacher != self.inscription.curr_user %}({{self.inscription.teacher}}){% endif %}
         {% if not self.inscription.past %}
-        <a href="{% url 'agenda:inscription:manage' pk=self.inscription.pk %}" class="p-2"
+        <a href="{% url 'agenda:inscription:manage' level_pk=self.inscription.level.pk  pk=self.inscription.pk %}" class="p-2"
            title="Modifier">
             <i class="fas fa-edit text-lg"></i>
         </a>

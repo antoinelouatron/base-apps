@@ -183,32 +183,34 @@ class BaseImportForm(bf.FileImportForm):
         model = um.User
         name_fields = []
         fields = []
-        # name_attrs = {
-        #     "first_name": {"label": "Prénom", "placeholder": "Prénom"},
-        #     "last_name": {"label": "Nom", "placeholder": "Nom"},
-        #     "email": {"label": "Email", "placeholder": "Email"},
-        #     "title": {"label": "Civilité", "placeholder": "Civilité"},
-        #     "level": {"label": "Classe", "placeholder": "Classe"},
-        #     "subject": {"label": "Matière", "placeholder": "Matière"},
-        #     "colle_group": {"label": "Groupe", "placeholder": "N° du groupe de colle"}
-        # }
-    
-    @classmethod
-    def _get_initial_name_mapping(cls):
-        """
-        Correspondance de nom par défaut.
-        """
-        # beware of KeyError
-        return {
-            f"_name_mapping_{i}": cls.DEFAULT_NAME_MAPPING[name]
-            for i, name in enumerate(cls.Meta.name_fields)
+        name_attrs = {
+            "first_name": {"label": "Prénom", "placeholder": "Prénom"},
+            "last_name": {"label": "Nom", "placeholder": "Nom"},
+            "email": {"label": "Email", "placeholder": "Email"},
+            "title": {"label": "Civilité", "placeholder": "Civilité"},
+            "level": {"label": "Classe", "placeholder": "Classe"},
+            "subject": {"label": "Matière", "placeholder": "Matière"},
+            "colle_group": {"label": "Groupe", "placeholder": "N° du groupe de colle"}
         }
+    
+    # @classmethod
+    # def _get_initial_name_mapping(cls):
+    #     """
+    #     Correspondance de nom par défaut.
+    #     """
+    #     # beware of KeyError
+    #     return {
+    #         f"_name_mapping_{i}": cls.DEFAULT_NAME_MAPPING[name]
+    #         for i, name in enumerate(cls.Meta.name_fields)
+    #     }
 
     def __init__(self, *args, **kwargs):
-        initial = kwargs.get("initial", {})
-        nm = self._get_initial_name_mapping()
-        initial.update(_name_mapping=list(nm.values()))
-        kwargs["initial"] = initial
+        # le code commenté a été bougé dans la classe parent.
+
+        # initial = kwargs.get("initial", {})
+        # nm = self._get_initial_name_mapping()
+        # initial.update(_name_mapping=list(nm.values()))
+        # kwargs["initial"] = initial
         kwargs["label_suffix"] = " "
         super().__init__(*args, **kwargs)
         self.levels = {} # level_name.lower() -> Level instance

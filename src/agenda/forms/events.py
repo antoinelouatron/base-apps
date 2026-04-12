@@ -6,8 +6,9 @@ from django import forms
 
 from bulkimport.forms.importfile import FileImportForm
 import agenda.models as am
-import users.models as um
 from utils.forms import widgets, filter_qs
+import users.models as um
+import users.cache as uc
 
 class BaseAttendanceForm(filter_qs.FilterQuerySetForm):
 
@@ -229,9 +230,11 @@ class InscriptionForm(forms.ModelForm):
             "max_students": "",
         }
     
-    def __init__(self, *args, teacher=None, **kwargs):
+    def __init__(self, *args, level=None, teacher=None, **kwargs):
         if teacher is None:
             raise ValueError("teacher must be set")
+        if level is None:
+            raise ValueError("level must be set")
         self.teacher = teacher
         if teacher.is_staff and "instance" in kwargs and kwargs["instance"] is not None:
             # remove initial value for teacher
@@ -239,10 +242,8 @@ class InscriptionForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         if not teacher.is_staff:
             self.fields["teacher"].widget = forms.HiddenInput()
-        self.fields["teacher"].queryset = um.User.objects.filter(
-            is_active=True, teacher=True)
-        self.fields["attendants"].queryset = um.User.objects.filter(
-            teacher=False, is_active=True).order_by("last_name", "first_name")
+        self.fields["teacher"].queryset = uc.teachers.get(level, as_qs=True)
+        self.fields["attendants"].queryset = uc.students.get(level)
     
     def clean_teacher(self):
         if not self.teacher.is_staff:
@@ -304,7 +305,7 @@ class NoteForm(forms.ModelForm):
             "target_event": forms.HiddenInput()
         }
 
-
+# TODO : passer un level dans la vue.
 class ToDoForm(BaseAttendanceForm):
 
     add_css_classes = {
@@ -329,8 +330,9 @@ class ToDoForm(BaseAttendanceForm):
                 attrs={"placeholder": "Description", "title": "Description"}),
         }
     
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, level=None, **kwargs):
         super().__init__(*args, **kwargs)
+        self.level = level
         self.fields["_attendance_string"].required = False
     
     def save(self, commit=True):
@@ -343,12 +345,16 @@ class ToDoForm(BaseAttendanceForm):
                 inst.save()
                 self.save_m2m()
         else:
-            filter = {} # all takes precedence over students
             if studs and not all:
-                filter["student"] = True
+                qs = um.User.objects.students(level=self.level)
+            else:
+                if self.level is not None:
+                    qs = um.User.objects.level(self.level)
+                else:
+                    qs = um.User.objects.all()
             def save_m2m():
                 inst.save()
-                inst.attendants.set(um.User.objects.filter(**filter))
+                inst.attendants.set(qs)
             if commit:
                 save_m2m()
             else:

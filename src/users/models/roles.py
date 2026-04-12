@@ -206,6 +206,11 @@ class Subject(models.Model):
     def short_name(self):
         return self.name.split("-")[0]
     
+    def with_prepo(self):
+        subj_label = self.name
+        sep = "d'" if subj_label.lower()[0] in "aeiou" else "de "
+        return f"{sep}{subj_label}"
+    
     @property
     def colle_dur(self) -> ColleTime:
         if not hasattr(self, "_colle_dur_cache"):

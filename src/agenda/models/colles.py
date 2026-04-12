@@ -18,6 +18,10 @@ class ColleEventManager(models.Manager):
 
 
 class ColleEvent(events.AbstractPeriodic):
+    """
+    Attributs hérités d'AbstractPeriodic :
+        day, beghour, endhour, subj, classroom
+    """
 
     class Meta:
         verbose_name = "Créneau de colle"
@@ -25,8 +29,6 @@ class ColleEvent(events.AbstractPeriodic):
 
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Professeur")
     order = models.PositiveSmallIntegerField(default=0)
-    # level = models.ForeignKey(Level, on_delete=models.CASCADE, verbose_name="Classe",
-    #     default=get_default_level)
     # acts as a hidden foreign key to link CollePlanning to ColleEvent
     # when importing
     abbrev = models.CharField(max_length=10, blank=True, default="")
@@ -70,6 +72,7 @@ class CPManager(models.Manager):
         return super().get_queryset().select_related(
             "event__teacher", "week", "group")
 
+    # TODO : adapt to new role system
     def for_user(self, user):
         """
         Returns events concerning given YearUser.
@@ -77,13 +80,28 @@ class CPManager(models.Manager):
         Beware of using this on the manager, and not on the queryset.
         """
         qs = self.get_queryset()
-        if user.is_authenticated and user.teacher:
+        if user.is_authenticated and user.roles.is_colleur():
             return qs.filter(event__teacher=user)
-        if user.is_authenticated:
+        if user.is_authenticated and user.roles.is_student():
             return qs.filter(
                 group__nb__in=user.studentcollegroup.values_list(
                     "group__nb", flat=True))
         return self.none()
+    
+    def before(self, date: datetime.date):
+        """Prévu avant (inclus) la date donnée. Utilisé pour les événements passés."""
+        filt = models.Q(week__end__lte=date) # semaine passée
+        # ou semaine courrante et événement déjà passé dans la semaine
+        filt |= models.Q(week__begin__lte=date, event__day__lte=date.weekday(),
+            week__end__gte=date)
+        return self.get_queryset().filter(filt, week__active=True)
+
+    def after(self, date: datetime.date):
+        """Prévu après (exclu) la date donnée. Utilisé pour les événements à venir."""
+        filt = models.Q(week__begin__gt=date) # semaine future
+        filt |= models.Q(week__begin__lte=date, event__day__gt=date.weekday(),
+            week__end__gte=date)
+        return self.get_queryset().filter(filt, week__active=True)
 
 class CollePlanning(models.Model, compatibility.EventCompatibility, events.ToSpanMixin,
             metaclass=events.TimelineMetaclass):

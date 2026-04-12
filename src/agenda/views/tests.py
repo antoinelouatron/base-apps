@@ -648,10 +648,11 @@ class TestEventManage(TestCase, UsersAndWeeks):
         resp = url.test()
         self.assertFalse(resp.context["form"].is_valid())
         #same code as in forms.tests
-        self.create_teachers(TEACHERS)
+        level = um.get_default_level(instance=True)
+        self.create_teachers(TEACHERS, level=level)
         fpath = settings.TEST_BASE_DIR / "agenda" / "fixtures" / "edt.json"
         self.assertTrue(fpath.exists())
-        level = um.get_default_level(instance=True)
+        
         with open(fpath, "rb") as upl_file:
             url.data = {
                 "_encoding": "utf8",
@@ -931,11 +932,16 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
     
     def test_manage_inscriptions(self):
         self.create_users(3)
-        url = test_view.TestURL(self, "agenda", "inscription:manage", status=403)
+        level = um.Level.objects.create(name="testlevel")
+        subject = um.Subject.objects.create(name="testsubj", level=level)
+        url = test_view.TestURL(self, "agenda", "inscription:manage",
+            status=403, kwargs={"level_pk": level.pk})
         url.test()
         url.set_user(self.users[0])
         url.test()
-        self.staff_user.teacher = True
+        self.staff_user.roles.add(um.AtomicRole.create(
+            teacher=True, subject=subject
+        ))
         self.staff_user.is_staff = False
         self.staff_user.save()
         self.staff_user.refresh_from_db()
@@ -985,7 +991,9 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
     
     def test_inscription_list(self):
         self.create_users(3)
-        url = test_view.TestURL(self, "agenda", "inscription:list", status=403)
+        level = am.Level.objects.create(name="test")
+        url = test_view.TestURL(self, "agenda", "inscription:list",
+            status=403, kwargs={"pk": level.pk})
         url.test()
         url.set_user(self.users[0])
         url.status = 200
@@ -1014,7 +1022,8 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
         resp = url.test()
         self.assertEqual(am.InscriptionEvent.objects.count(), 2)
         self.assertEqual(len(resp.context["inscriptions"]), 1)
-        url = test_view.JsonURL(self, "agenda", "inscription:list_passed", status=403)
+        url = test_view.JsonURL(self, "agenda", "inscription:list_passed",
+            status=403, kwargs={"pk": level.pk})
         url.test(forbidden=True)
         url.set_user(self.users[0])
         url.status = 200
@@ -1032,11 +1041,17 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
         )
         inst.attendants.set(self.users)
         url = test_view.TestURL(self, "agenda", "inscription:manage", status=403,
-            kwargs={"pk": inst.pk})
+            kwargs={"pk": inst.pk,
+                    "level_pk": inst.level.pk})
         url.test()
         url.set_user(self.users[0])
         url.test()
-        self.users[0].teacher = True
+        subject = um.Subject.objects.create(
+            name="testsubject",
+            level=inst.level)
+        self.users[0].roles.add(um.AtomicRole.create(
+            subject=subject, teacher=True)
+        )
         self.users[0].is_active = True
         self.users[0].save()
         url.status = 200
@@ -1044,7 +1059,9 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
         messages = list(resp.context['messages'])
         # we should get a message about no edition rights
         self.assertEqual(len(messages), 1)
-        self.staff_user.teacher = True
+        self.staff_user.roles.add(um.AtomicRole.create(
+            subject=subject, teacher=True)
+        )
         self.staff_user.save()
         url.set_user(self.staff_user)
         resp = url.test()

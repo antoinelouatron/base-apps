@@ -4,6 +4,7 @@ date: 2024-03-30
 import collections
 import re
 from django.forms import ValidationError
+import users.cache as uc
 import users.models as um
 
 class Grouper():
@@ -60,6 +61,8 @@ class Grouper():
 
 grouper = Grouper()
 
+# TODO : use users.cache for teachers
+
 class AttComputer():
     """
     Convert a list of comma-separated values to a User list
@@ -77,8 +80,9 @@ class AttComputer():
             user__is_active=True).select_related("user", "group__level")
         colle_groups = colle_groups.order_by("group__level")
         teachers_obj = um.User.objects.teachers().filter(is_active=True)
-        subjects = um.Subject.objects.select_related("level").only("pk", "level")
-        subj_dict = {str(s.pk): s.level for s in subjects}
+        #subjects = um.Subject.objects.select_related("level").only("pk", "level")
+        #subj_dict = {str(s.pk): s.level for s in subjects}
+        subj_dict  = uc.subjects
         # convert to dict for fast access
         self.att_dict = collections.defaultdict(lambda: {"all": []})
         teachers_dict = {} #{t.display_name: [t] for t in teachers_obj}

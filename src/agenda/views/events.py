@@ -15,6 +15,7 @@ from bulkimport import views as bv
 from utils import reverse
 import utils.views
 from utils.views import mixins
+from users import cache as uc
 import users.models as um
 
 
@@ -138,7 +139,7 @@ class CreateUpdatePeriodic(BasePeriodicManage):
     def popns(self, **kwargs):
         ns = super().popns(**kwargs)
         groups = um.ColleGroup.objects.order_by("nb").values_list("nb", flat=True)
-        teachers = um.User.objects.filter(teacher=True, is_active=True)
+        teachers = uc.teachers[self.level]
         ns["eventData"] = {
             "groups": list(groups),
             "letters": "ABC",
