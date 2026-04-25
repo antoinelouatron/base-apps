@@ -15,7 +15,7 @@ from django.utils.timezone import get_default_timezone, make_aware, is_aware, lo
 from agenda import components
 from agenda.models import Week
 from agenda.models import compatibility, attendance
-from users.models import User, Level, Subject, get_default_level
+from users.models import User, Level, Subject, get_default_level, get_default_subject
 
 MIN_HOUR = datetime.time(8)
 MAX_HOUR = datetime.time(19, 30)
@@ -555,8 +555,16 @@ class InscriptionEvent(BaseEvent, metaclass=TimelineMetaclass):
     override = True
     is_full = models.BooleanField(default=False, verbose_name="Complet")
     week = True #bypass week management
+    subj = models.ForeignKey(Subject, on_delete=models.CASCADE,
+        verbose_name="Matière", default=get_default_subject)
 
     objects = InscriptionQuerySet.as_manager()
+
+    def save(self, *args, **kwargs):
+        if self.subj is None:
+            return super().save()
+        self.level = self.subj.level
+        return super().save(*args, **kwargs)
 
     def locked(self):
         """

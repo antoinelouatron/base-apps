@@ -177,13 +177,15 @@ class PermissionCheck():
     Utility class to check only users with given role can access an url.
     """
 
-    def __init__(self, url: TestURL, only_with_role: Iterable[str]):
+    def __init__(self, url: TestURL, only_with_role: Iterable[str],
+            methods=("get",)):
         """
         url : a TestURL object with user=None
         only_with_role : role names required to access the url
         """
         self.url = url
         self.only_with_role = set(only_with_role)
+        self.methods = methods
     
     def test(self, ok_status=200, level=None, subject=None, **test_kwargs):
         """
@@ -201,6 +203,7 @@ class PermissionCheck():
         self.url.test(**test_kwargs)
         self.url.set_user(user)
         last_ok = None
+        base_method = self.url.method
         for role_name in um.AtomicRole.CREATE_NAMES.keys():
             kwargs = {um.AtomicRole.CREATE_NAMES[role_name]: True}
             if role_name in um.AtomicRole._NEED_LEVEL:
@@ -215,11 +218,16 @@ class PermissionCheck():
                 last_ok = role
             else:
                 self.url.status = 403
-            self.url.test(
-                msg="Testing role {}".format(um.AtomicRole._TRANSLATIONS[role_name]),
-                **test_kwargs
-            )
+            for method in self.methods:
+                self.url.method = method
+                self.url.test(
+                    msg="Testing role {}, method {}".format(
+                        um.AtomicRole._TRANSLATIONS[role_name],
+                        method),
+                    **test_kwargs
+                )
         self.url.status = base_status
+        self.url.method = base_method
         if last_ok is not None:
             user.roles.set([last_ok])
             user.save()

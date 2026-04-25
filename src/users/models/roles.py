@@ -222,6 +222,11 @@ class Subject(models.Model):
         self.colle_time = value.to_json()
         self._colle_dur_cache = value
 
+def get_default_subject(instance=False) -> Subject:
+    level = get_default_level(instance=True)
+    subj, _ = Subject.objects.get_or_create(name="Mathématiques", level=level)
+    return subj if instance else subj.pk
+
 def prepare_qs_for_component(queryset):
     return {str(obj.pk): obj for obj in queryset}
 

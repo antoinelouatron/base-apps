@@ -9,6 +9,6 @@
     {% csrf_token %}
     {{form}}
     <button type="submit" class="button border border-red-500">Supprimer</button>
-    <a href="{% url 'agenda:inscription:manage' level_pk=object.level.pk %}" class="button">Annuler</a>
+    <a href="{% url 'agenda:inscription:manage' subject_pk=object.subj.pk %}" class="button">Annuler</a>
 </form>
 {% endblock content %}

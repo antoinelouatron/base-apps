@@ -5,7 +5,9 @@ import datetime
 from typing import Any
 from django import forms, template, urls
 from django.contrib import messages
-from django.http import JsonResponse
+from django.http import HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect
+from django.views.generic.detail import SingleObjectMixin
 
 import agenda.forms as af
 import agenda.models as am
@@ -17,9 +19,10 @@ import utils.views
 from utils.views import mixins
 from users import cache as uc
 import users.models as um
+import users.permissions as up
 
 
-class BasePeriodicManage(mixins.UserIsStaffMixin,
+class BasePeriodicManage(mixins.PermissionMixin,
     mixins.JSONFormMixin, utils.views.CreateUpdateView):
     """
     Create or update AbstractPeriodic events.
@@ -29,6 +32,7 @@ class BasePeriodicManage(mixins.UserIsStaffMixin,
     """
     form_class = None
     model = None
+    PERMISSION = up.REF_TEACHER | up.SECRETARY
 
     def create_agenda(self,pop_saturday=True):
         tt = timetable.PeriodicConstruction(self.get_queryset())
@@ -88,16 +92,18 @@ class BasePeriodicManage(mixins.UserIsStaffMixin,
             return um.Level.objects.get(pk=int(level_id))
         except:
             return um.get_default_level(instance=True)
+    
+    def set_level_data(self):
+        self.level = self.get_level(self.kwargs.get("level_pk", None))
+        return super().set_level_data()
 
     def post(self, request, *args, **kwargs):
         self.ajax = True
-        self.level = self.get_level(kwargs.get("level_id", None))
         self.curr_day = request.POST.get("curr_day", 0)
         return super().post(request, *args, **kwargs)
     
     def get(self, request, *args, **kwargs):
         self.ajax = False
-        self.level = self.get_level(kwargs.get("level_id", None))
         self.curr_day = 0
         return super().get(request, *args, **kwargs)
 
@@ -165,8 +171,14 @@ class PrintTimetableView(CreateUpdatePeriodic):
         ctx["tt_scale"] = 2.5
         return ctx
 
-class DeletePeriodicView(mixins.UserIsStaffMixin, mixins.BaseJsonView):
+class DeletePeriodicView(mixins.PermissionMixin, mixins.BaseJsonView):
     model = am.PeriodicEvent
+    PERMISSION = up.REF_TEACHER | up.SECRETARY
+
+    def additional_filter(self, user: um.User):
+        if user.roles.is_secretary():
+            return {}
+        return {"level__in": user.roles.ref_teacher_levels}
 
     def post(self, request, *args, **kwargs):
         try:
@@ -180,6 +192,8 @@ class DeletePeriodicView(mixins.UserIsStaffMixin, mixins.BaseJsonView):
         except:
             return self.error("Erreur lors de la suppression")
 
+
+# Note  : il faut sûrement re-créer ces vues dans chaque app fille.
 class ImportTimetable(bv.ModelImportView):
     model_name = "edt"
     form_class = af.PeriodicImport
@@ -208,10 +222,18 @@ class ImportDsEvents(bv.ModelImportView):
 
 ImportDsEvents.register("Devoirs surveillés")
 
-class ExportTimetable(mixins.UserIsTeacherMixin, mixins.BaseJsonView):
+class ExportTimetable(mixins.PermissionMixin, SingleObjectMixin,
+        mixins.BaseJsonView):
+    pk_url_kwarg = "level_pk"
+    model = um.Level
+    PERMISSION = up.REF_TEACHER | up.SECRETARY
+
+    def set_level_data(self):
+        self.level = self.get_object()
+        return super().set_level_data()
     
     def get_data(self, ctx):
-        evs = am.PeriodicEvent.objects.filter(perso=False)
+        evs = am.PeriodicEvent.objects.filter(perso=False, subj__level=self.level)
         ev_list = []
         for ev in evs:
             ev_list.append(ev.to_dict())
@@ -252,13 +274,14 @@ class TimetableDisplayMixin():
             ns["week"] = self.week.pk
         return ns
 
-class StandaloneTimetable(mixins.UserIsTeacherMixin, utils.views.TemplateView,
+class StandaloneTimetable(mixins.PermissionMixin, utils.views.TemplateView,
             TimetableDisplayMixin):
     
     template_name = "agenda/standalone_timetable.html"
     raise_exception = True
     SCRIPTS = ["standalone_tt"]
     PAGE_TITLE = "Gestion des mémos"
+    PERMISSION = up.REF_TEACHER | up.TEACHER
 
     def dispatch(self, request, *args, **kwargs):
         self.week = self.get_current_week()
@@ -272,12 +295,20 @@ class StandaloneTimetable(mixins.UserIsTeacherMixin, utils.views.TemplateView,
         ctx["note_form"] = af.NoteForm()
         return ctx
 
-class ToDoManageView(mixins.UserIsStaffMixin, utils.views.CreateUpdateView):
+class ToDoManageView(mixins.PermissionMixin, utils.views.CreateUpdateView):
     model = am.ToDo
     form_class = af.ToDoForm
     template_name = "agenda/todo_form.html"
     PAGE_TITLE = "Création d'une tâche"
     SCRIPTS = ["home"]
+    PERMISSION = up.REF_TEACHER | up.TEACHER
+
+    def set_level_data(self):
+        self.level = get_object_or_404(
+            um.Level,
+            pk=self.kwargs.get("level_pk")
+        )
+        return super().set_level_data()
 
     def get_all_menus(self, ctx):
         base = ah.agenda_menus(self.request.user)
@@ -290,13 +321,21 @@ class ToDoManageView(mixins.UserIsStaffMixin, utils.views.CreateUpdateView):
         messages.success(self.request, "Tâche ajoutée")
         return "/"
 
-class ManageBaseEvent(mixins.UserIsStaffMixin,  TimetableDisplayMixin,
+class ManageBaseEvent(mixins.PermissionMixin,  TimetableDisplayMixin,
         utils.views.CreateUpdateView):
     model = am.BaseEvent
     form_class = af.BaseEventForm
     template_name = "agenda/base_event_form.html"
     PAGE_TITLE = "Création d'un événement"
     SCRIPTS = ["base_events"]
+    PERMISSION = up.REF_TEACHER | up.SECRETARY
+
+    def set_level_data(self):
+        self.level = get_object_or_404(
+            um.Level,
+            pk=self.kwargs.get("level_pk")
+        )
+        return super().set_level_data()
 
     def dispatch(self, request, *args, **kwargs):
         if "week" in request.GET:
@@ -326,7 +365,9 @@ class ManageBaseEvent(mixins.UserIsStaffMixin,  TimetableDisplayMixin,
         else:
             messages.success(self.request, "Événement ajouté")
         query_param = f"?week={self.object.week.pk}"
-        return urls.reverse("agenda:manage_events") + query_param
+        return urls.reverse(
+            "agenda:manage_events",
+            kwargs={"level_pk": self.level.pk}) + query_param
     
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         ctx = super().get_context_data(**kwargs)
@@ -334,10 +375,26 @@ class ManageBaseEvent(mixins.UserIsStaffMixin,  TimetableDisplayMixin,
         qs = qs.filter(inscriptionevent__isnull=True)
         ctx["events"] = qs
         ctx["week"] = self.week
+        ctx["level"] = self.level
         return ctx
 
-class DeleteBaseEventView(mixins.UserIsStaffMixin, utils.views.DeleteView):
-    model = am.BaseEvent
-    success_url = urls.reverse_lazy("agenda:manage_events")
+class DeleteBaseEventView(mixins.PermissionMixin, utils.views.DeleteView):
+    queryset = am.BaseEvent.objects.select_related("level")
+    PERMISSION = up.REF_TEACHER | up.SECRETARY
     http_method_names = ["post"]
+
+    def get_success_url(self) -> str:
+        return urls.reverse("agenda:manage_events",
+            kwargs={"level_pk": self.object.level.pk})
+
+    def form_valid(self, form: Any) -> HttpResponse:
+        self.object = self.get_object()
+        if (not self.request.user.roles.is_secretary() and
+            not self.request.user.roles.is_ref_teacher(self.object.level)
+            ):
+            messages.error(self.request, "Vous n'avez pas le droit de supprimer cet événement")
+            return redirect(self.get_success_url())
+        messages.success(self.request, "Événement supprimé")
+        return super().form_valid(form)
+
     

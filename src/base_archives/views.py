@@ -11,9 +11,11 @@ from django.shortcuts import redirect
 from django_sendfile import sendfile
 
 from base_archives import db_save
+import users.permissions as up
 from utils.views import mixins, View
 
-class DownloadDb(mixins.UserIsStaffMixin, View):
+class DownloadDb(mixins.PermissionMixin, View):
+    PERMISSION = up.SECRETARY | up.SCHOOL_ADMIN
 
     def get(self, request, *args, **kwargs):
         """

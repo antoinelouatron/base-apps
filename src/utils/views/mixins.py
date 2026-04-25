@@ -3,6 +3,7 @@ Created on Fri Nov 27 15:41:17 2015
 """
 import abc
 import logging
+import warnings
 
 from django.conf import settings
 from django.contrib.auth.mixins import UserPassesTestMixin
@@ -20,11 +21,19 @@ class UserIsStaffMixin(UserPassesTestMixin):
     def test_func(self) -> bool:
         return self.request.user.is_staff
 
+# Depecated
 class UserIsTeacherMixin(UserPassesTestMixin):
     """
     Test en plus avec le modèle User utilisé ici.
     """
     raise_exception = True
+
+    def __new__(cls, *args, **kwargs):
+        warnings.warn(
+            f"{cls.__name__} inherits from UserIsTeacherMixin which is deprecated. Use PermissionMixin instead.",
+            DeprecationWarning,
+            stacklevel=2)
+        return super().__new__(cls, *args, **kwargs)
 
     def test_func(self) -> bool:
         b = self.request.user.is_authenticated and self.request.user.teacher
@@ -40,6 +49,10 @@ class PermissionMixin(UserPassesTestMixin):
     raise_exception = True
 
     def set_level_data(self):
+        """
+        Subclasses must set self.level or self.subject or both, then
+        return super().set_level_data()
+        """
         level = getattr(self, "level", None)
         subject = getattr(self, "subject", None)
         return level, subject

@@ -42,9 +42,11 @@ class _QsProxy():
     def all(self):
         return self
     
-    def get(self, pk=None):
+    def get(self, pk=None, id=None):
+        pk = pk or id
+        pk = str(pk)
         for obj in self._data:
-            if obj.pk == pk:
+            if str(obj.pk) == pk:
                 return obj
         raise um.User.DoesNotExist
     
@@ -86,8 +88,8 @@ class _UserCache:
             for k, v in u.roles[self.role].items():
                 if v:
                     level = subjects[k] # could be None
-                    self._cache[level] = self._cache.get(level, [])
-                    self._cache[level].append(u)
+                    self._cache[level] = self._cache.get(level, set())
+                    self._cache[level].add(u)
         self.stale = False
 
 class _StudentCache():

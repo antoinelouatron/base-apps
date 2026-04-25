@@ -131,8 +131,8 @@ class TestImportForms(TestCase):
         with open(fpath, "rb") as upl_file:
             data = {
                 "_encoding": "utf8",
-                "level": 1,
-                "subject": 1,
+                "level": -1,
+                "subject": -1,
             }
             data.update(cf.TeacherImportForm._get_initial_name_mapping())
             files = {
@@ -216,9 +216,10 @@ class TestImportForms(TestCase):
             self.assertFalse(form.is_valid())
         levels = [um.Level.objects.get_or_create(name="PT")[0], 
                   um.Level.objects.get_or_create(name="PTSI")[0]]
+        subjects = []
         for level in levels:
-            um.Subject.objects.create(name="Math", level=level)
-            um.Subject.objects.create(name="Physique-Chimie", level=level)
+            subjects.append(um.Subject.objects.create(name="Math", level=level))
+            subjects.append(um.Subject.objects.create(name="Physique-Chimie", level=level))
         with open(fpath, "rb") as upl_file:
             files = {
                 "import_file": InMemoryUploadedFile(
@@ -230,7 +231,7 @@ class TestImportForms(TestCase):
             self.assertTrue(form.is_valid())
             form.save()
             self.assertEqual(um.User.objects.count(), 20)
-            for subject in um.Subject.objects.all():
+            for subject in subjects:
                 self.assertEqual(um.User.objects.teachers(subject).count(), 5)
     
     def test_colleur_import(self):
@@ -239,8 +240,8 @@ class TestImportForms(TestCase):
         with open(fpath, "rb") as upl_file:
             data = {
                 "_encoding": "utf8",
-                "level": 1,
-                "subject": 1,
+                "level": -1,
+                "subject": -1,
             }
             data.update(cf.ColleurImportForm._get_initial_name_mapping())
             files = {
@@ -287,9 +288,10 @@ class TestImportForms(TestCase):
             self.assertFalse(form.is_valid())
         levels = [um.Level.objects.get_or_create(name="PT")[0], 
                   um.Level.objects.get_or_create(name="PTSI")[0]]
+        subjects = []
         for level in levels:
-            um.Subject.objects.create(name="Math", level=level)
-            um.Subject.objects.create(name="Physique-Chimie", level=level)
+            subjects.append(um.Subject.objects.create(name="Math", level=level))
+            subjects.append(um.Subject.objects.create(name="Physique-Chimie", level=level))
         with open(fpath, "rb") as upl_file:
             files = {
                 "import_file": InMemoryUploadedFile(
@@ -301,5 +303,5 @@ class TestImportForms(TestCase):
             self.assertTrue(form.is_valid())
             form.save()
             self.assertEqual(um.User.objects.count(), 20)
-            for subject in um.Subject.objects.all():
+            for subject in subjects:
                 self.assertEqual(um.User.objects.colleurs(subject).count(), 5)

@@ -5,8 +5,10 @@ import datetime
 import logging
 from typing import Any
 
+from django.contrib import messages
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import ObjectDoesNotExist
+from django.shortcuts import redirect
 from django.views.generic.detail import SingleObjectMixin
 from django.views.generic.edit import CreateView
 
@@ -17,6 +19,7 @@ from rest_framework.permissions import IsAuthenticated
 import agenda.forms.events as aevents
 from agenda.models import timetable, year, events, colles, utils
 import users.models as um
+import users.permissions as up
 from utils.views import mixins
 
 logger = logging.getLogger(__name__)
@@ -29,10 +32,13 @@ class PersoTTView(LoginRequiredMixin, mixins.JSONTemplateView):
     def get(self, request, *args, week=None, user_id=None, **kwargs):
         try:
             self.week = year.Week.objects.get(pk=week)
-            self.curr_user = request.user
+            self.curr_user : um.User = request.user
             # spoofing !
-            if (self.curr_user.teacher or self.curr_user.is_staff) and user_id is not None:
+            if (self.curr_user.teacher or self.curr_user.roles.is_colleur()) and user_id is not None:
                 self.curr_user = um.User.objects.get(pk=int(user_id))
+                # vérification que l'on accède pas aux données protégées
+                if self.curr_user.roles.is_admin() or self.curr_user.roles.is_secretary():
+                    self.curr_user = request.user
             return super().get(request, *args, **kwargs)
         except ObjectDoesNotExist:
             logger.info("Week not found")
@@ -107,7 +113,7 @@ class TimelineView(LoginRequiredMixin, mixins.JSONTemplateView):
         return utils.regroup_by_month(
             *[model.timeline_qs(self.request) for model in events.timeline_models]
         )
-
+    # TODO : vérifier si c'est pertinent d'avoir un cas spécial pour les colleurs
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         ctx = super().get_context_data(**kwargs)
         ctx["timeline"] = self.get_all()
@@ -122,6 +128,7 @@ class NoteDetailView(LoginRequiredMixin, mixins.JSONTemplateView):
     template_name = "agenda/components/note_detail.html"
     raise_exception = True
 
+    # TODO : vérifier si l'event en question à un rapport avec le demandeur.
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         ctx = super().get_context_data(**kwargs)
         self.notes = ctx["notes"] = events.Note.objects.filter(
@@ -138,21 +145,38 @@ class NoteDetailView(LoginRequiredMixin, mixins.JSONTemplateView):
             data["title"] = "Aucun mémo"
         return data
 
-class CreateNoteView(mixins.UserIsTeacherMixin, mixins.JSONFormView, CreateView):
+class CreateNoteView(mixins.PermissionMixin, mixins.JSONFormView, CreateView):
     model = events.Note
     form_class = aevents.NoteForm
     template_name = "agenda/forms/note_form.html"
     raise_exception = True
+    PERMISSION = up.TEACHER | up.REF_TEACHER
+
+    # TODO : vérification que l'enseignant est bien concerné par
+    # l'événement ciblé ?
 
     def serialize_object(self, obj):
         return {
             "comment": obj.comment
         }
+    
+    def form_valid(self, form):
+        user = self.request.user
+        ev = form.instance.target_event
+        can_create = ev.subj is None
+        can_create = can_create or user.roles.is_ref_teacher(ev.subj.level)
+        can_create = can_create or user.roles.is_teacher(ev.subj)
+        if not can_create:
+            #messages.error(self.request, "Vous n'avez pas le droit de supprimer cet événement")
+            return self.error("Autorisation refusée")
+        #messages.success(self.request, "Événement supprimé")
+        return super().form_valid(form)
 
-class CheckAgendaView(mixins.UserIsStaffMixin, mixins.JSONTemplateView, SingleObjectMixin):
+class CheckAgendaView(mixins.PermissionMixin, mixins.JSONTemplateView, SingleObjectMixin):
     template_name = "agenda/check_agenda.html"
     raise_exception = True
     model = um.Level
+    PERMISSION = up.REF_TEACHER
 
     def construct_agenda(self):
         pevs = events.PeriodicEvent.objects.filter(subj__level=self.level)

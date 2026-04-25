@@ -201,7 +201,7 @@ class InscriptionForm(forms.ModelForm):
     class Meta:
         model = am.InscriptionEvent
         fields = ["teacher", "label", "max_students", "begin", "end", "classroom",
-            "attendants"]
+            "attendants", "subj"]
         labels = {
             "max_students": "Nombre de places",
             "label": "Nom à afficher",
@@ -220,6 +220,7 @@ class InscriptionForm(forms.ModelForm):
             "classroom": forms.TextInput(
                 attrs={"placeholder": "Salle (facultatif)", "title": "Salle"},
             ),
+            "subj": forms.HiddenInput()
         }
         labels = {
             "teacher": "Professeur",
@@ -230,25 +231,29 @@ class InscriptionForm(forms.ModelForm):
             "max_students": "",
         }
     
-    def __init__(self, *args, level=None, teacher=None, **kwargs):
+    def __init__(self, *args, subject=None, teacher=None, **kwargs):
         if teacher is None:
             raise ValueError("teacher must be set")
-        if level is None:
-            raise ValueError("level must be set")
+        if subject is None:
+            raise ValueError("subject must be set")
         self.teacher = teacher
-        if teacher.is_staff and "instance" in kwargs and kwargs["instance"] is not None:
+        self.subject = subject
+        if teacher.roles.is_teacher(subject=subject) and "instance" in kwargs and kwargs["instance"] is not None:
             # remove initial value for teacher
             kwargs["initial"] = {}
         super().__init__(*args, **kwargs)
-        if not teacher.is_staff:
+        if not teacher.roles.is_teacher(subject=subject):
             self.fields["teacher"].widget = forms.HiddenInput()
-        self.fields["teacher"].queryset = uc.teachers.get(level, as_qs=True)
-        self.fields["attendants"].queryset = uc.students.get(level)
+        self.fields["teacher"].queryset = uc.colleurs.get(subject.level, as_qs=True)
+        self.fields["attendants"].queryset = uc.students.get(subject.level)
     
     def clean_teacher(self):
-        if not self.teacher.is_staff:
+        if not self.teacher.roles.is_teacher(subject=self.subject):
             return self.teacher
         return self.cleaned_data["teacher"]
+    
+    def clean_subj(self):
+        return self.subject
 
 class DsAtomic(BaseAttendanceForm): # not a good name !
     date = forms.DateField()

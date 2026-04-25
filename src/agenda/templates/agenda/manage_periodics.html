@@ -41,9 +41,9 @@
 {% with modal_id="full-tt" modal_body_tmpl="agenda/timetable_base.html" event_render="agenda/periodic_tt_event.html" responsive=True wfull=True modal_title="EDT"%}
 {% include "components/modal.html" %}
 {% endwith %}
-<span class="button"><a class="text-white no-underline" href="{% url 'agenda:export_timetable' level_id=level.id %}">Export</a></span>
+<span class="button"><a class="text-white no-underline" href="{% url 'agenda:export_timetable' level_pk=level.id %}">Export</a></span>
 <span class="button check-tt" data-url="{% url 'agenda:check_agenda' pk=level.id %}">Vérifier</span>
-<span class="button"><a class="text-white no-underline" href="{% url 'agenda:print_timetable' level_id=level.id %}">Imprimer</a></span>
+<span class="button"><a class="text-white no-underline" href="{% url 'agenda:print_timetable' level_pk=level.id %}">Imprimer</a></span>
 <div id="check-result"></div>
 {% with modal_id="teacher-dialog" modal_body_tmpl="agenda/forms/teacher_popup.html" modal_title="Choisir un professeur" modal_footer_tmpl="agenda/forms/teacher_modal_footer.html"%}
 {% include "components/modal.html" %}

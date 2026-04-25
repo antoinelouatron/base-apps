@@ -301,6 +301,11 @@ class TestApi(TestCase, UsersAndWeeks):
         self.assertIn("curr_user", ctx)
         self.assertEqual(ctx["curr_user"].pk, self.users[1].pk, "change")
         url.set_user(self.staff_user)
+        subject = um.Subject.objects.first()
+        self.staff_user.roles.add(
+            um.AtomicRole.create(colleur=True, subject=subject)
+        )
+        self.staff_user.save()
         resp = url.test()
         ctx = resp.context
         self.assertIn("curr_user", ctx)
@@ -362,13 +367,24 @@ class TestApi(TestCase, UsersAndWeeks):
     
     def test_note_create(self):
         url = test_view.JsonURL(self, "agenda", "note_create", status=403)
-        url.test(forbidden=True)
-        url.set_user(self.users[0])
-        url.test(forbidden=True)
+        perms = test_view.PermissionCheck(
+            url,
+            ["t"],
+            ("get", "post")
+        )
         self.create_weeks()
+        level = um.get_default_level(instance=True)
+        subject = um.Subject.objects.create(name="test", level=level)
         ev1 = am.PeriodicEvent.objects.create(begweek=1, endweek=35, subject="math",
-            periodicity=2, day=0, beghour=datetime.time(8), endhour=datetime.time(10))
-        url.set_user(self.staff_user)
+            periodicity=2, day=0, beghour=datetime.time(8),
+            endhour=datetime.time(10),
+            subj=subject)
+        user = self.users[0]
+        user.roles.add(
+            um.AtomicRole.create(teacher=True, subject=subject)
+        )
+        user.save()
+        url.set_user(user)
         url.status = 200
         url.method = "post"
         url.data = {
@@ -378,6 +394,20 @@ class TestApi(TestCase, UsersAndWeeks):
         }
         url.test()
         self.assertEqual(am.Note.objects.count(), 1)
+        subject2 = um.Subject.objects.create(name="test2" , level=level)
+        ev1.subj = subject2
+        # user is not the teacher anymore
+        ev1.save()
+        url.status = 403 # json error
+        url.test()
+        self.assertEqual(am.Note.objects.count(), 1)
+        user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level)
+        )
+        user.save()
+        url.status = 200
+        url.test()
+        self.assertEqual(am.Note.objects.count(), 2)
     
     def test_note_details(self):
         self.create_weeks()
@@ -436,6 +466,10 @@ class TestApi(TestCase, UsersAndWeeks):
         url = test_view.JsonURL(self, "agenda", "check_agenda", status=403,
             kwargs={"pk": level.pk})
         url.test(forbidden=True)
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level)
+        )
+        self.staff_user.save()
         url.set_user(self.staff_user)
         url.status = 200
         resp = url.test()
@@ -451,7 +485,12 @@ class TestEventManage(TestCase, UsersAndWeeks):
         return super().setUp()
 
     def test_periodic_access(self):
-        url = test_view.TestURL(self, "agenda", "manage_periodic", status=403)
+        level = um.get_default_level(instance=True)
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level))
+        self.staff_user.save()
+        url = test_view.TestURL(self, "agenda", "manage_periodic",
+            status=403, kwargs={"level_pk": level.pk})
         url.test()
         url.set_user(self.users[0])
         url.test()
@@ -464,7 +503,12 @@ class TestEventManage(TestCase, UsersAndWeeks):
         self.assertIn("agenda", ctx)
 
     def test_periodic_creation(self):
-        url = test_view.JsonURL(self, "agenda", "manage_periodic", status=403)
+        level = um.get_default_level(instance=True)
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level))
+        self.staff_user.save()
+        url = test_view.JsonURL(self, "agenda", "manage_periodic",
+            status=403, kwargs={"level_pk": level.pk})
         url.method = "post"
         url.test(forbidden=True)
         url.set_user(self.users[0])
@@ -516,6 +560,10 @@ class TestEventManage(TestCase, UsersAndWeeks):
         url.test()
     
     def test_periodic_update(self):
+        level = um.get_default_level(instance=True)
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level))
+        self.staff_user.save()
         url = test_view.JsonURL(self, "agenda", "manage_periodic", status=403)
         url.method = "post"
         url.test(forbidden=True)
@@ -567,6 +615,10 @@ class TestEventManage(TestCase, UsersAndWeeks):
         url.test()
     
     def test_periodic_delete(self):
+        level = um.get_default_level(instance=True)
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level))
+        self.staff_user.save()
         url = test_view.JsonURL(self, "agenda", "delete_periodic", status=403)
         url.method = "post"
         url.test(forbidden=True)
@@ -574,18 +626,21 @@ class TestEventManage(TestCase, UsersAndWeeks):
         url.test(forbidden=True)
         url.set_user(self.staff_user)
         self.assertEqual(am.PeriodicEvent.objects.count(), 0)
+        level2 = um.Level.objects.create(name="testlevel")
+        subject = am.Subject.objects.create(name="math", level=level2)
         ev = am.PeriodicEvent.objects.create(
             beghour=datetime.time(8),
             endhour=datetime.time(10),
             day=0,
             label="cours",
-            subject="math",
+            subj=subject,
             begweek=1,
             endweek=10,
             periodicity=1
         )
         url.data = {"ids": ev.pk}
         url.status = 200
+        self.assertEqual(am.PeriodicEvent.objects.count(), 1)
         url.test()
         self.assertEqual(am.PeriodicEvent.objects.count(), 0)
         evs = [am.PeriodicEvent.objects.create(
@@ -605,20 +660,28 @@ class TestEventManage(TestCase, UsersAndWeeks):
         self.assertEqual(data["deleted"], 5)
         self.assertEqual(am.PeriodicEvent.objects.count(), 0)
     
-    def test_delete_periodic_erros(self):
+    def test_delete_periodic_errors(self):
         url = test_view.JsonURL(self, "agenda", "delete_periodic", status=403)
         url.method = "post"
         url.test(forbidden=True)
         url.set_user(self.users[0])
         url.test(forbidden=True)
         url.set_user(self.staff_user)
+        level = um.get_default_level(instance=True)
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level))
+        self.staff_user.save()
+        subject =  um.Subject.objects.create(
+            name="math",
+            level=level
+        )
         self.assertEqual(am.PeriodicEvent.objects.count(), 0)
         am.PeriodicEvent.objects.create(
             beghour=datetime.time(8),
             endhour=datetime.time(10),
             day=0,
             label="cours",
-            subject="math",
+            subj=subject,
             begweek=1,
             endweek=10,
             periodicity=1
@@ -674,11 +737,14 @@ class TestEventManage(TestCase, UsersAndWeeks):
     def test_export_tt(self):
         level = um.get_default_level(instance=True)
         url = test_view.TestURL(self, "agenda", "export_timetable", status=403,
-            kwargs={"level_id": level.pk})
+            kwargs={"level_pk": level.pk})
         url.test()
         url.set_user(self.users[0])
         url.test()
         url.set_user(self.staff_user)
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level))
+        self.staff_user.save()
         url.status = 200
         resp = url.test()
         resp.json()
@@ -757,19 +823,22 @@ class TestEventManage(TestCase, UsersAndWeeks):
         self.create_weeks()
         url = test_view.TestURL(self, "agenda", "personal_timetable", status=403,
             tests=[test_view.CheckNs("urls", "week", "urls.initialTt")])
-        url.test()
-        url.set_user(self.users[0])
-        url.test()
-        url.set_user(self.staff_user)
-        url.status = 200
-        url.test()
+        perms = test_view.PermissionCheck(
+            url,
+            ["rt", "t"]
+        )
+        perms.test()
     
     def test_manage_base_events(self):
-        url = test_view.TestURL(self, "agenda", "manage_events", status=403)
+        level = um.get_default_level(instance=True)
+        url = test_view.TestURL(self, "agenda", "manage_events", status=403, kwargs={"level_pk": level.pk})
         url.test()
         url.set_user(self.users[0])
         url.test()
         url.set_user(self.staff_user)
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level))
+        self.staff_user.save()
         url.status = 200
         resp = url.test()
         self.assertIn("form", resp.context)
@@ -783,6 +852,7 @@ class TestEventManage(TestCase, UsersAndWeeks):
     
     def test_update_base_events(self):
         self.create_weeks()
+        level = um.get_default_level(instance=True)
         beghour = datetime.datetime.combine(self.weeks[0].begin, datetime.time(8))
         beghour = timezone.make_aware(beghour)
         endhour = datetime.datetime.combine(self.weeks[0].begin, datetime.time(10))
@@ -792,12 +862,18 @@ class TestEventManage(TestCase, UsersAndWeeks):
             begin=beghour,
             end=endhour,
             classroom="A",
+            level=level
         )
-        url = test_view.TestURL(self, "agenda", "manage_events", status=403,
-            kwargs={"pk": ev.pk})
+        url = test_view.TestURL(self, "agenda", "manage_events",
+            status=403,
+            kwargs={"pk": ev.pk, "level_pk": level.pk})
         url.test()
         url.set_user(self.users[0])
         url.test()
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level)
+        )
+        self.staff_user.save()
         url.set_user(self.staff_user)
         url.status = 200
         resp = url.test()
@@ -820,11 +896,17 @@ class TestEventManage(TestCase, UsersAndWeeks):
         beghour = timezone.make_aware(beghour)
         endhour = datetime.datetime.combine(self.weeks[0].begin, datetime.time(10))
         endhour = timezone.make_aware(endhour)
-        url = test_view.TestURL(self, "agenda", "manage_events", status=403)
+        level = um.get_default_level(instance=True)
+        url = test_view.TestURL(self, "agenda",
+            "manage_events", status=403, kwargs={"level_pk": level.pk})
         url.test()
         url.set_user(self.users[0])
         url.test()
         url.set_user(self.staff_user)
+        level = um.get_default_level(instance=True)
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level))
+        self.staff_user.save()
         url.status = 200
         resp = url.test()
         self.assertIn("form", resp.context)
@@ -842,6 +924,7 @@ class TestEventManage(TestCase, UsersAndWeeks):
     
     def test_delete_base_events(self):
         self.create_weeks()
+        level = um.get_default_level(instance=True)
         beghour = datetime.datetime.combine(self.weeks[0].begin, datetime.time(8))
         beghour = timezone.make_aware(beghour)
         endhour = datetime.datetime.combine(self.weeks[0].begin, datetime.time(10))
@@ -851,6 +934,7 @@ class TestEventManage(TestCase, UsersAndWeeks):
             begin=beghour,
             end=endhour,
             classroom="A",
+            level=level
         )
         url = test_view.TestURL(self, "agenda", "delete_event", status=403,
             kwargs={"pk": ev.pk})
@@ -859,6 +943,10 @@ class TestEventManage(TestCase, UsersAndWeeks):
         url.set_user(self.users[0])
         url.test()
         url.set_user(self.staff_user)
+        url.test()
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level))
+        self.staff_user.save()
         url.status = 405
         url.method = "get"
         url.test()
@@ -934,13 +1022,14 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
         self.create_users(3)
         level = um.Level.objects.create(name="testlevel")
         subject = um.Subject.objects.create(name="testsubj", level=level)
+        self.create_students(3, level=level)
         url = test_view.TestURL(self, "agenda", "inscription:manage",
-            status=403, kwargs={"level_pk": level.pk})
+            status=403, kwargs={"subject_pk": subject.pk})
         url.test()
         url.set_user(self.users[0])
         url.test()
         self.staff_user.roles.add(um.AtomicRole.create(
-            teacher=True, subject=subject
+            colleur=True, subject=subject
         ))
         self.staff_user.is_staff = False
         self.staff_user.save()
@@ -955,22 +1044,28 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
             begin=timezone.now(),
             end=timezone.now() + datetime.timedelta(10),
             teacher=self.staff_user,
-            max_students=2
+            max_students=2,
+            subj=subject
         )
         inst.attendants.set(self.users)
-        url.status = 200
         resp = url.test()
         self.assertEqual(len(resp.context["inscriptions"]), 1)
         url.method = "post"
-        self.create_teachers(TEACHERS)
+        self.create_teachers(TEACHERS, level=level)
+        teacher = self.teachers[0] # we have to pass a colleur in data !
+        teacher.roles.add(
+            um.AtomicRole.create(colleur=True, subject=subject)
+        )
+        teacher.save()
         url.data = {
-            "teacher": self.teachers[0].pk,
+            "teacher": teacher.pk,
             "begin": timezone.now(),
             "end": timezone.now() + datetime.timedelta(10),
             "max_students": 2,
             "label": "test",
             "classroom": "A",
-            "attendants": [self.users[0].pk, self.users[1].pk]
+            "subj": subject.pk,
+            "attendants": [self.students[0].pk, self.students[1].pk]
         }
         url.status = 302
         resp = url.test()
@@ -978,8 +1073,13 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
         self.assertEqual(am.InscriptionEvent.objects.count(), 2)
         self.assertEqual(am.InscriptionEvent.objects.last().attendants.count(), 2)
         # check that teacher have been set to self.staff_user
-        self.assertEqual(am.InscriptionEvent.objects.last().teacher, self.staff_user)
-        self.staff_user.is_staff = True
+        inst = am.InscriptionEvent.objects.last()
+        self.assertEqual(inst.classroom, "A")
+        self.assertEqual(inst.teacher, self.staff_user)
+        # now, a teacher can assign an Inscription to a same subject colleur.
+        self.staff_user.roles.add(
+            um.AtomicRole.create(teacher=True, subject=subject)
+        )
         self.staff_user.save()
         self.staff_user.refresh_from_db()
         url.set_user(self.staff_user)
@@ -990,24 +1090,31 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
         self.assertEqual(am.InscriptionEvent.objects.last().teacher, self.teachers[0])
     
     def test_inscription_list(self):
-        self.create_users(3)
         level = am.Level.objects.create(name="test")
+        subject = am.Subject.objects.create(name="test", level=level)
+        self.create_students(3, level=level)
         url = test_view.TestURL(self, "agenda", "inscription:list",
             status=403, kwargs={"pk": level.pk})
         url.test()
-        url.set_user(self.users[0])
+        url.set_user(self.students[0])
         url.status = 200
         resp = url.test()
         self.assertIn("object_list", resp.context)
         self.assertEqual(len(resp.context["object_list"]), 0)
+        teacher = um.User.objects.create_colleur(
+            first_name="test",
+            last_name="test",
+            subject=subject
+        )
         inst = am.InscriptionEvent.objects.create(
             label="test",
             begin=timezone.now() + datetime.timedelta(10),
             end=timezone.now() + datetime.timedelta(10),
-            teacher=self.staff_user,
-            max_students=2
+            teacher=teacher,
+            max_students=2,
+            subj=subject
         )
-        inst.attendants.set(self.users)
+        inst.attendants.set(self.students)
         url.status = 200
         resp = url.test()
         self.assertEqual(am.InscriptionEvent.objects.count(), 1)
@@ -1016,16 +1123,18 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
             label="test",
             begin=timezone.now() - datetime.timedelta(10),
             end=timezone.now() + datetime.timedelta(10),
-            teacher=self.staff_user,
-            max_students=2
+            teacher=teacher,
+            max_students=2,
+            subj=subject
         )
         resp = url.test()
         self.assertEqual(am.InscriptionEvent.objects.count(), 2)
         self.assertEqual(len(resp.context["inscriptions"]), 1)
+        # list  archived is accessible by subject
         url = test_view.JsonURL(self, "agenda", "inscription:list_passed",
-            status=403, kwargs={"pk": level.pk})
+            status=403, kwargs={"pk": subject.pk})
         url.test(forbidden=True)
-        url.set_user(self.users[0])
+        url.set_user(self.students[0])
         url.status = 200
         resp = url.test()
         self.assertEqual(len(resp.context["inscriptions"]), 1)
@@ -1040,28 +1149,34 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
             max_students=2
         )
         inst.attendants.set(self.users)
-        url = test_view.TestURL(self, "agenda", "inscription:manage", status=403,
+        url = test_view.TestURL(self, "agenda", "inscription:manage",
+            status=403,
             kwargs={"pk": inst.pk,
-                    "level_pk": inst.level.pk})
+                    "subject_pk": inst.subj.pk}
+        )
         url.test()
         url.set_user(self.users[0])
         url.test()
-        subject = um.Subject.objects.create(
-            name="testsubject",
-            level=inst.level)
+        subject = inst.subj
         self.users[0].roles.add(um.AtomicRole.create(
-            subject=subject, teacher=True)
+            subject=subject, colleur=True)
         )
         self.users[0].is_active = True
         self.users[0].save()
         url.status = 200
         resp = url.test()
-        messages = list(resp.context['messages'])
         # we should get a message about no edition rights
+        messages = list(resp.context['messages'])
         self.assertEqual(len(messages), 1)
+
         self.staff_user.roles.add(um.AtomicRole.create(
             subject=subject, teacher=True)
         )
+        self.staff_user.roles.add(um.AtomicRole.create(
+            subject=subject, colleur=True)
+        )
+        self.staff_user.last_name = "for_debug"
+        self.staff_user.is_staff = False
         self.staff_user.save()
         url.set_user(self.staff_user)
         resp = url.test()
@@ -1069,15 +1184,17 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
         self.assertEqual(len(messages), 0)
         # check edition mode
         url.method = "post"
-        url.status = 302
         url.data = {
             "label": "test2",
             "begin": timezone.now() + datetime.timedelta(10),
             "end": timezone.now() + datetime.timedelta(10),
-            "teacher": self.staff_user.pk, # must be a teacher
-            "max_students": 2
+            "teacher": self.staff_user.pk, # must be a colleur
+            "max_students": 2,
+            "subj": subject.pk
         }
+        url.status = 302
         resp = url.test()
+        #print(resp.context["form"].errors)
         inst.refresh_from_db()
         self.assertEqual(inst.label, "test2")
         url.set_user(self.users[0])
@@ -1101,35 +1218,73 @@ class TestInscription(TestCase, test_data.CreateUserMixin):
         inst.attendants.set(self.users)
         url = test_view.TestURL(self, "agenda", "inscription:delete", status=403,
             kwargs={"pk": inst.pk})
-        url.test()
-        url.set_user(self.users[0])
-        url.test()
-        url.method = "post"
-        url.status = 403
-        url.test()
-        url.method = "get"
-        url.status = 200
-        url.set_user(self.staff_user)
-        url.test()
+        perms = test_view.PermissionCheck(
+            url,
+            ("t", "c"),
+            ("get",))
+        perms.test()
+        not_teacher = self.users[0]
+        not_teacher.roles.add(
+            um.AtomicRole.create(colleur=True, subject=inst.subj)
+        )
+        not_teacher.save()
+        url.set_user(not_teacher)
         url.method = "post"
         url.status = 302
+        self.assertEqual(am.InscriptionEvent.objects.count(), 1)
+        url.test()
+        self.assertEqual(am.InscriptionEvent.objects.count(), 1)
+        teacher = not_teacher
+        teacher.roles.add(
+            um.AtomicRole.create(teacher=True, subject=inst.subj)
+        )
+        teacher.save()
         url.test()
         self.assertEqual(am.InscriptionEvent.objects.count(), 0)
-
+        # test that colleur can deete own inscription
+        inst = am.InscriptionEvent.objects.create(
+            label="test",
+            begin=timezone.now() + datetime.timedelta(10),
+            end=timezone.now() + datetime.timedelta(10),
+            teacher=self.staff_user,
+            max_students=2
+        )
+        self.staff_user.roles.add(
+            um.AtomicRole.create(colleur=True, subject=inst.subj)
+        )
+        self.staff_user.save()
+        url = test_view.TestURL(self, "agenda", "inscription:delete", status=302,
+            kwargs={"pk": inst.pk}, method="post")
+        self.assertEqual(am.InscriptionEvent.objects.count(), 1)
+        url.set_user(self.staff_user)
+        url.test()
+        self.assertEqual(am.InscriptionEvent.objects.count(), 0)
 
 class TestToDo(TestCase, UsersAndWeeks):
     
     def test_todo_access(self):
         self.create_users()
-        url = test_view.TestURL(self, "agenda", "todo", status=403)
+        level = um.get_default_level()
+        url = test_view.TestURL(self, "agenda", "todo", status=403,
+            kwargs={"level_pk": level})
         url.test()
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level)
+        )
+        self.staff_user.save()
         url.set_user(self.staff_user)
         url.status = 200
         url.test()
     
     def test_todo_create(self):
         self.create_users()
-        url = test_view.TestURL(self, "agenda", "todo", status=403)
+        level = um.get_default_level()
+        url = test_view.TestURL(self, "agenda", "todo", status=403,
+            kwargs={"level_pk": level})
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level)
+        )
+        self.staff_user.save()
         url.set_user(self.staff_user)
         url.status = 302
         url.method = "post"
@@ -1144,10 +1299,15 @@ class TestToDo(TestCase, UsersAndWeeks):
     
     def test_todo_update(self):
         self.create_users()
+        level = um.get_default_level(instance=True)
         todo = am.ToDo.objects.create(date=datetime.date.today(), label="test",
-            long_label="test")
+            long_label="test", level=level)
         url = test_view.TestURL(self, "agenda", "todo", status=302,
-            kwargs={"pk": todo.pk})
+            kwargs={"pk": todo.pk, "level_pk": level.pk})
+        self.staff_user.roles.add(
+            um.AtomicRole.create(ref_teacher=True, level=level)
+        )
+        self.staff_user.save()
         url.set_user(self.staff_user)
         url.method = "post"
         url.data = {
@@ -1175,5 +1335,4 @@ class TestToDo(TestCase, UsersAndWeeks):
     #     self.assertEqual(am.ToDo.objects.count(), 0)
     #     url.status = 403
     #     url.test()
-        
-        
+

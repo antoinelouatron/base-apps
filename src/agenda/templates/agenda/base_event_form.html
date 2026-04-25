@@ -30,7 +30,7 @@
                 </span>
             </div>
             <div class="text-center">
-            <a href="{% url 'agenda:manage_events' pk=ev.pk %}">
+            <a href="{% url 'agenda:manage_events' level_pk=level.pk pk=ev.pk %}">
                 <i class="fas fa-edit m-2 fa-lg" title="Modifier"></i>
             </a>
             <i class="copy-event fas fa-copy m-2 fa-lg" title="Copier"

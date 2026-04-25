@@ -121,6 +121,7 @@ class TestImportUsers(TestCase, CreateUserMixin):
         url.set_user(self.staff_user)
         url.status = 200
         url.test()
+        # TODO : change to teachers.csv
         fpath = Path(__file__).parent / "fixtures" / "teachers.json"
         with open(fpath, "rb") as upl_file:
             url.data = {

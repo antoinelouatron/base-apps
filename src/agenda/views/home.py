@@ -14,8 +14,8 @@ def agenda_menus(user: um.User) -> menu.MenuList:
         ml.add(f"Colloscope {level.name}", "agenda:cscope_overview", f"cscope_overview_{level.id}", pk=level.id)
         if not AGENDA_PERM.has_permission(user, level=level):
             continue
-        ml.add(f"Gestion EDT {level.name}","agenda:manage_periodic",  f"calendar_{level.id}", level_id=level.id)
-        ml.add(f"Événements ponctuels {level.name}", "agenda:manage_events", f"events_{level.id}", pk=level.id)
+        ml.add(f"Gestion EDT {level.name}","agenda:manage_periodic",  f"calendar_{level.id}", level_pk=level.id)
+        ml.add(f"Événements ponctuels {level.name}", "agenda:manage_events", f"events_{level.id}", level_pk=level.id)
     
 
     return ml

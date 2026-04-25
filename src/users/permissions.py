@@ -4,6 +4,8 @@ date: 2025-07-23
 
 import abc
 
+import users.cache as uc
+
 class Permission(abc.ABC):
     """
     Abstract base class for permissions.
@@ -82,6 +84,8 @@ class IsTeacher(Permission):
     """
     
     def has_permission(self, user, level=None, subject=None) -> bool:
+        if level is not None:
+            return user in uc.teachers.get(level)
         return user.is_authenticated and user.roles.is_teacher(level=level, subject=subject)
 
 class IsColleur(Permission):
@@ -90,6 +94,8 @@ class IsColleur(Permission):
     """
     
     def has_permission(self, user, level=None, subject=None) -> bool:
+        if level is not None:
+            return user in uc.colleurs.get(level)
         return user.is_authenticated and user.roles.is_colleur(level=level, subject=subject)
 
 class IsSecretary(Permission):
