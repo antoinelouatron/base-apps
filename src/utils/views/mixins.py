@@ -15,13 +15,21 @@ import users.permissions as up
 from . import static_assets, json_utils, rich_results
 from utils import menu, actions
 
+#Deprecated
 class UserIsStaffMixin(UserPassesTestMixin):
     raise_exception = True
+
+    def __new__(cls, *args, **kwargs):
+        warnings.warn(
+            f"{cls.__name__} inherits from UserIsStaffMixin which is deprecated. Use PermissionMixin instead.",
+            DeprecationWarning,
+            stacklevel=2)
+        return super().__new__(cls, *args, **kwargs)
 
     def test_func(self) -> bool:
         return self.request.user.is_staff
 
-# Depecated
+# Deprecated
 class UserIsTeacherMixin(UserPassesTestMixin):
     """
     Test en plus avec le modèle User utilisé ici.
