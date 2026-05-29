@@ -146,6 +146,12 @@ class User(AbstractUser):
         verbose_name = "Utilisateur"
         verbose_name_plural = "Utilisateurs"
         ordering = ("last_name", "first_name",)
+        constraints = [
+        models.UniqueConstraint(
+            models.Lower('email'),
+            name="unique_lower_email"
+        ),
+    ]
         indexes = [GinIndex(fields=["roles"]), models.Index(fields=["username"])]
 
     MONSIEUR = "M."
@@ -184,6 +190,8 @@ class User(AbstractUser):
     def save(self, *args, **kwargs):
         if self.username is None or self.username == "":
             self.username = get_username(first_name=self.first_name, last_name=self.last_name)
+        if self.email is not None:
+            self.email = self.email.lower()
         super().save(*args, **kwargs)
     
     def get_full_name(self) -> str:

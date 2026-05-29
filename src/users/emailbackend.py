@@ -11,6 +11,8 @@ class EMailBackend(ModelBackend):
 
     def authenticate(self, request, username=None, password=None):
         User = get_user_model()
+        if username is not None:
+            username=username.lower()
         try:
             user = User.objects.get(email=username)
             if check_password(password, user.password):

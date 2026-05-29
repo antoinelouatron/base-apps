@@ -6,7 +6,7 @@ from .events import (CreateUpdatePeriodic, ImportTimetable, ImportColleEvents,
     StandaloneTimetable, ToDoManageView, ManageBaseEvent, DeleteBaseEventView,
     PrintTimetableView) 
 from .home import AgendaHome, agenda_menus
-from .inscriptions import (StudentInscriptionView, CancelInscriptionView,
-    ManageInscriptionView, InscriptionListView, PastInscriptionsListView,
-    DeleteInscriptionView)
+# from inscriptions.views import (StudentInscriptionView, CancelInscriptionView,
+#     ManageInscriptionView, InscriptionListView, PastInscriptionsListView,
+#     DeleteInscriptionView)
 from .cscope import (ConsultCscopeView, PersoCscopeView, CscopeOverview)

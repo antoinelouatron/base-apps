@@ -26,6 +26,5 @@ class CollePlaningAdmin(admin.ModelAdmin):
 
 admin.site.register(am.CollePlanning, CollePlaningAdmin)
 
-admin.site.register(am.InscriptionEvent)
 admin.site.register(am.ToDo)
 admin.site.register(am.Note)

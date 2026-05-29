@@ -5,19 +5,19 @@ import agenda.views as av
 router = DefaultRouter()
 router.register("week", av.WeekViewSet, basename="week_api")
 
-inscriptions = (
-    [
-        path("<int:pk>/", av.StudentInscriptionView.as_view(), name="add"),
-        path("supprimer/<int:pk>/", av.CancelInscriptionView.as_view(),
-             name="cancel"),
-        path("gerer/<int:subject_pk>/", av.ManageInscriptionView.as_view(), name="manage"),
-        path("gerer/<int:subject_pk>/<int:pk>/", av.ManageInscriptionView.as_view(), name="manage"),
-        path("voir/<int:pk>/", av.InscriptionListView.as_view(), name="list"),
-        path("api/list/<int:pk>", av.PastInscriptionsListView.as_view(), name="list_passed"),
-        path("supprimer-seance/<int:pk>/", av.DeleteInscriptionView.as_view(), name="delete"),
-    ],
-    "inscription"
-)
+# inscriptions = (
+#     [
+#         path("<int:pk>/", av.StudentInscriptionView.as_view(), name="add"),
+#         path("supprimer/<int:pk>/", av.CancelInscriptionView.as_view(),
+#              name="cancel"),
+#         path("gerer/<int:subject_pk>/", av.ManageInscriptionView.as_view(), name="manage"),
+#         path("gerer/<int:subject_pk>/<int:pk>/", av.ManageInscriptionView.as_view(), name="manage"),
+#         path("voir/<int:pk>/", av.InscriptionListView.as_view(), name="list"),
+#         path("api/list/<int:pk>", av.PastInscriptionsListView.as_view(), name="list_passed"),
+#         path("supprimer-seance/<int:pk>/", av.DeleteInscriptionView.as_view(), name="delete"),
+#     ],
+#     "inscription"
+# )
 
 api_urls = router.urls + [
     # TODO : move api call here
@@ -52,5 +52,5 @@ urlpatterns = [
     path("todo/<int:level_pk>/<int:pk>/", av.ToDoManageView.as_view(), name="todo"),
     path("colloscope/<int:pk>/", av.CscopeOverview.as_view(), name="cscope_overview"),
     path("api/", include((api_urls, "api"))),
-    path("inscriptions/", include(inscriptions)),
+    #path("inscriptions/", include(inscriptions)),
 ]
