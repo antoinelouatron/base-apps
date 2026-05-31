@@ -27,17 +27,37 @@ class UserAtomicForm(forms.ModelForm):
         super().__init__(*args, **kwargs)
         self.role = role    
     
+    def find_existing(self) -> um.User | None:
+        """
+        Return the user already in DB matching this row (by email, the unique
+        key), or None. Email is matched case-insensitively since User.save()
+        lowercases it and the unique constraint is on Lower("email").
+        """
+        email = self.cleaned_data.get("email")
+        if not email:
+            return None
+        return um.User.objects.filter(email__iexact=email).first()
+
+    def _post_clean(self):
+        # Cross-import idempotence: if the user already exists in DB, bind it
+        # *before* model validation so the unique-email constraint sees an
+        # update (its pk is excluded) rather than a duplicate. Otherwise
+        # validation fails before save() can reuse the instance, since all
+        # sub-forms are validated before any is saved.
+        existing = self.find_existing()
+        if existing is not None:
+            self.instance = existing
+        super()._post_clean()
+
     def save(self, commit=True) -> um.User:
-        # check if user exists or has been created by previous form(s)
-        # Don't do that in clean, because all forms are cleaned before saving
-        # begin, in bulkimport mode.
-        try:
-            cd = self.cleaned_data
-            user = um.User.objects.get(email=cd["email"],
-                first_name=cd["first_name"], last_name=cd["last_name"])
-            self.instance = user
-        except:
-            pass
+        # Within-batch merge: a sibling row with the same email may have been
+        # saved earlier in this very import (the DB was still empty at
+        # validation time, so _post_clean could not see it). Re-bind here so
+        # duplicate rows collapse into one user, e.g. a student listed under
+        # two levels ends up with both student roles.
+        existing = self.find_existing()
+        if existing is not None:
+            self.instance = existing
         instance = super().save(commit=False)
         if self.role:
             instance.roles.add(self.role)

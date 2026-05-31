@@ -120,7 +120,12 @@ class HolidayGenerator():
         self.parse_holidays()
     
     def download_open_data(self, out_path):
-        req = requests.get(settings.AGENDA_OFFICIAL_ICAL_URL)
+        try:
+            req = requests.get(settings.AGENDA_OFFICIAL_ICAL_URL, timeout=10)
+        except requests.RequestException as e:
+            logger.error("Could not reach ICAL url %s : %s",
+                settings.AGENDA_OFFICIAL_ICAL_URL, e)
+            return False
         if req.status_code == 200:
             with open(out_path, "w") as f:
                 f.write(req.text)

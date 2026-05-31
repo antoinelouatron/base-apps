@@ -38,7 +38,7 @@ class TestYear(TestCase):
     def test_download(self):
         p = settings.AGENDA_ICAL_FILE
         p.unlink(missing_ok=True)
-        with self.settings(AGENDA_OFFICIAL_ICAL_URL="https://prepa.blaise-pascal.fr"):
+        with self.settings(AGENDA_OFFICIAL_ICAL_URL="https://prepa.louatron.fr"):
             with self.assertLogs(level=logging.ERROR):
                 am.HolidayGenerator()
         with self.assertNoLogs():

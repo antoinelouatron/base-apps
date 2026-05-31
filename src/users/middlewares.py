@@ -1,6 +1,11 @@
 import users.models as um
 
 class SeeAsMiddleware:
+    """
+    Voir le contenu comme un autre utilisateur.
+
+    Aucune UI n'est livrée dans cette app.
+    """
     def __init__(self, get_response):
         self.get_response = get_response
     
@@ -9,6 +14,7 @@ class SeeAsMiddleware:
         b = b and (user.teacher or user.is_superuser or user.is_staff)
         return b
 
+    # TODO : revoir la logique ?
     def __call__(self, request):
         if not request.user.is_authenticated:
             return self.get_response(request)

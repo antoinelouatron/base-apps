@@ -18,6 +18,19 @@ def get_setting(setting, default=None, cast_type=str):
     except ValueError:
         raise ImproperlyConfigured("Cannot cast {} to {}".format(setting, cast_type))
 
+def parse_bool(value):
+    """
+    Cast an environment value to a boolean.
+
+    Don't use the builtin ``bool`` as cast_type: env values are strings and
+    ``bool("False")`` is ``True``, so any non-empty value (including "False"
+    or "0") would enable the setting. Only explicit truthy strings are True;
+    anything unknown falls back to False (secure default).
+    """
+    if isinstance(value, bool):
+        return value
+    return str(value).strip().lower() in ("1", "true", "yes", "on")
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(get_setting(
     "BASE_DIR",
@@ -28,7 +41,7 @@ TEST_BASE_DIR = BASE_DIR
 
 SECRET_KEY = get_setting("SECRET_KEY")
 
-DEBUG = get_setting("DEBUG", False, bool)
+DEBUG = get_setting("DEBUG", False, parse_bool)
 
 ALLOWED_HOSTS = []
 INTERNAL_IPS = [
