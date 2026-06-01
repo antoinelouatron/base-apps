@@ -11,12 +11,14 @@ class CreateUserMixin():
         """
         create self.staff_user, self.admin_user and self.users : list
         """
-        self.staff_user = um.User.objects.create_user(username="staff", is_staff=True)
-        self.admin_user = um.User.objects.create_superuser(username="admin")
+        self.staff_user = um.User.objects.create_user(username="staff", is_staff=True,
+            email="staff@example.com")
+        self.admin_user = um.User.objects.create_superuser(username="admin",
+            email="admin@example.com")
         self.users = []
         for i in range(nb):
             self.users.append(
-                um.User.objects.create_user(f"user{i}")
+                um.User.objects.create_user(f"user{i}", email=f"user{i}@example.com")
             )
     
     def create_students(self, nb=3, min=0, level=None):
@@ -25,7 +27,8 @@ class CreateUserMixin():
             self.students.append(
                 um.User.objects.create_student(username=f"student{i}",
                     colle_group=(i+1), first_name="John",
-                    last_name=f"Doe{i}", level=level)
+                    last_name=f"Doe{i}", level=level,
+                    email=f"student{i}_{level}@example.com")
             )
         return self.students
     
@@ -40,6 +43,11 @@ class CreateUserMixin():
                     teach_dict["subject"] = um.Subject.objects.get_or_create(
                         level=level, name=subj
                     )[0]  # get_or_create returns a tuple (obj, created), we only want the obj, so
+            if "email" not in teach_dict:
+                parts = [teach_dict["last_name"], level.name]
+                if teach_dict.get("subject") is not None:
+                    parts.append(teach_dict["subject"].name)
+                teach_dict["email"] = "_".join(p.lower() for p in parts) + "@example.com"
             self.teachers.append(
                 um.User.objects.create_teacher(**teach_dict)
             )

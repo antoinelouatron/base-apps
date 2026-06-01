@@ -18,7 +18,6 @@ from rest_framework.permissions import IsAuthenticated
 
 import agenda.forms.events as aevents
 from agenda.models import timetable, year, events, colles, utils
-from inscriptions.models import InscriptionEvent
 import users.models as um
 import users.permissions as up
 from utils.views import mixins
@@ -66,8 +65,10 @@ class PersoTTView(LoginRequiredMixin, mixins.JSONTemplateView):
         return qs
     
     def get_inscriptions(self):
-        qs = InscriptionEvent.objects.for_week(self.week).open()
-        qs = qs.user_attend(self.curr_user)
+        # qs = InscriptionEvent.objects.for_week(self.week).open()
+        # qs = qs.user_attend(self.curr_user)
+        qs = []
+        # Note : vue à surcharger !
         return qs
     
     def construct_timetable(self):

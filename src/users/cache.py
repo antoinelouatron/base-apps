@@ -83,6 +83,9 @@ class _UserCache:
         return self.get(level)
 
     def _populate_cache(self):
+        # Reset: sinon les entrées obsolètes (un user ayant perdu le rôle)
+        # persistent dans les sets, car on ne fait qu'ajouter ci-dessous.
+        self._cache = {}
         qs = self.qs.all()
         for u in qs:
             for k, v in u.roles[self.role].items():

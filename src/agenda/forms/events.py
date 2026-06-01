@@ -180,8 +180,6 @@ class BaseEventForm(BaseAttendanceForm):
             "classroom": "",
         }
 
-from inscriptions.forms import InscriptionForm  # noqa: F401
-
 class DsAtomic(BaseAttendanceForm): # not a good name !
     date = forms.DateField()
     begin = forms.TimeField()

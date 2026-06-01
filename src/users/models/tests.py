@@ -329,7 +329,7 @@ class TestUserManager(CreateUserMixin, TestCase):
         user3 = um.User.objects.create(
             first_name="Admin",
             last_name="User",
-            email="admin@example.com")
+            email="schooladmin@example.com")
         user3.roles.add(um.AtomicRole.create(school_admin=True))
         user3.save()
         self.assertTrue(user3.roles.is_admin())

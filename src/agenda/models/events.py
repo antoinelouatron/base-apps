@@ -520,5 +520,3 @@ class ToDo(AttendanceEvent, metaclass=TimelineMetaclass):
         """
         return ToDo.objects.filter(attendants=request.user,
             date__gte=datetime.date.today()).order_by("date")
-
-from inscriptions.models import InscriptionEvent, InscriptionQuerySet, InscriptionGroup

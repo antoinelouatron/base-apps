@@ -150,7 +150,8 @@ class User(AbstractUser):
         constraints = [
         models.UniqueConstraint(
             Lower("email"),
-            name="unique_lower_email"
+            name="unique_lower_email",
+            condition=~models.Q(email=""),
         ),
     ]
         indexes = [GinIndex(fields=["roles"]), models.Index(fields=["username"])]
@@ -298,6 +299,10 @@ class UserPref(models.Model):
     
     user = models.OneToOneField(User, models.CASCADE, verbose_name="Utilisateur")
     dark_theme = models.BooleanField(default=False, verbose_name="Mode sombre par défaut")
+    student_contactable = models.BooleanField(default=True,
+        verbose_name="Les étudiants peuvent me contacter par mail")
+    colleague_contactable = models.BooleanField(default=True,
+        verbose_name="Les collègues peuvent me contacter par mail")
 
     def to_context_data(self):
         ctx = {"dark_theme": self.dark_theme}
