@@ -12,7 +12,7 @@ from django.core.exceptions import ImproperlyConfigured
 from django.db import models
 from django.utils.timezone import get_default_timezone, make_aware, is_aware, localtime, now
 
-from agenda import components
+# from agenda import components  # widgets inscriptions déplacés dans blaise-colles
 from agenda.models import Week
 from agenda.models import compatibility, attendance
 from users.models import User, Level, Subject, get_default_level, get_default_subject

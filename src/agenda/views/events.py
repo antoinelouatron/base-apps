@@ -369,11 +369,14 @@ class ManageBaseEvent(mixins.PermissionMixin,  TimetableDisplayMixin,
             "agenda:manage_events",
             kwargs={"level_pk": self.level.pk}) + query_param
     
+    def get_events(self):
+        # Hook surchargé dans blaise-colles pour exclure les InscriptionEvent
+        # (.filter(inscriptionevent__isnull=True)).
+        return am.BaseEvent.objects.order_by("begin").select_related("week")
+
     def get_context_data(self, **kwargs: Any) -> dict[str, Any]:
         ctx = super().get_context_data(**kwargs)
-        qs = am.BaseEvent.objects.order_by("begin").select_related("week")
-        qs = qs.filter(inscriptionevent__isnull=True)
-        ctx["events"] = qs
+        ctx["events"] = self.get_events()
         ctx["week"] = self.week
         ctx["level"] = self.level
         return ctx

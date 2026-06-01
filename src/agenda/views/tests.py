@@ -263,24 +263,9 @@ class TestApi(TestCase, UsersAndWeeks):
         url.set_user(self.staff_user)
         resp = url.test()
         self.assertEqual(sum(len(d) for d in resp.context["agenda"].days), 1)
-        am.InscriptionEvent.objects.create(
-            label="test inscription",
-            begin=ev.begin + datetime.timedelta(hours=1),
-            end=ev.end + datetime.timedelta(hours=1),
-            max_students=2,
-            teacher=self.staff_user,
-        )
-        qs = am.InscriptionEvent.objects.for_week(week).open()
-        self.assertEqual(qs.count(), 1)
-        self.assertEqual(qs.user_attend(self.staff_user).count(), 1)
-        inscription = qs.first()
-        self.assertEqual(len(inscription.to_span()), 1)
-        resp = url.test()
-        self.assertEqual(sum(len(d) for d in resp.context["agenda"].days), 2)
-        url.set_user(self.users[0])
-        resp = url.test()
-        self.assertEqual(sum(len(d) for d in resp.context["agenda"].days), 1)
-    
+        # Rendu des inscriptions dans l'emploi du temps testé dans blaise-colles
+        # (PersoTTView.get_inscriptions est un hook surchargé là-bas).
+
     def test_user_select(self):
         self.create_weeks()
         # still no week with pk 0
@@ -333,19 +318,11 @@ class TestApi(TestCase, UsersAndWeeks):
         today = datetime.date.today() + datetime.timedelta(1)
         todo = am.ToDo.objects.create(date=today, label="test")
         todo.attendants.add(self.users[0])
-        # add an inscription event
-        begin = datetime.datetime.combine(today, datetime.time(8))
-        begin = timezone.make_aware(begin)
-        inst = am.InscriptionEvent.objects.create(
-            label="test",
-            begin=begin,
-            end=begin + datetime.timedelta(minutes=60),
-            teacher=self.staff_user,
-            max_students=1)
-        inst.attendants.add(self.users[0])
+        # Le rendu timeline des InscriptionEvent est testé dans blaise-colles
+        # (elles s'enregistrent dans timeline_models via TimelineMetaclass).
         resp = url.test()
         self.assertIn("timeline", resp.context)
-        self.assertEqual(sum(len(v["objects"]) for v in resp.context["timeline"]), 2)
+        self.assertEqual(sum(len(v["objects"]) for v in resp.context["timeline"]), 1)
         # others two event types are week-dependant....
         #add a Note
         week = am.Week.objects.create(
