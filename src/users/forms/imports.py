@@ -5,6 +5,7 @@ Les utilisateurs sont identifiés par leurs emails, noms, prénoms
 """
 
 from django import forms
+from django.forms.models import construct_instance
 
 import bulkimport.forms.importfile as bf
 import users.models as um
@@ -55,9 +56,13 @@ class UserAtomicForm(forms.ModelForm):
         # validation time, so _post_clean could not see it). Re-bind here so
         # duplicate rows collapse into one user, e.g. a student listed under
         # two levels ends up with both student roles.
+        # We re-fetch a fresh persisted instance, so we must re-apply this row's
+        # cleaned field values onto it (construct_instance) — otherwise a
+        # re-import would silently keep the stored data instead of updating it.
         existing = self.find_existing()
         if existing is not None:
-            self.instance = existing
+            self.instance = construct_instance(
+                self, existing, self._meta.fields, self._meta.exclude)
         instance = super().save(commit=False)
         if self.role:
             instance.roles.add(self.role)

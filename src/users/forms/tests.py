@@ -112,6 +112,11 @@ class TestImportForms(TestCase):
             form.save()
             self.assertEqual(um.User.objects.count(), 20)
             self.assertEqual(um.StudentColleGroup.objects.count(), 20)
+        # changer les prénoms puis vérfier que l'import les écrase
+        for user in um.User.objects.all():
+            self.assertNotEqual(user.first_name, "")
+            user.first_name = ""
+            user.save()
         with open(fpath, "rb") as upl_file:
             files = {
                 "import_file": InMemoryUploadedFile(
@@ -124,6 +129,8 @@ class TestImportForms(TestCase):
             form.save()
             self.assertEqual(um.User.objects.count(), 20)
             self.assertEqual(um.StudentColleGroup.objects.count(), 20)
+            for user in um.User.objects.all():
+                self.assertNotEqual(user.first_name, "")
     
     def test_teacher_import(self):
         base_path = settings.BASE_DIR / "users" / "fixtures"

@@ -267,6 +267,15 @@ class TestUserManager(CreateUserMixin, TestCase):
         self.subject = um.Subject.objects.create(name="Test Subject",
             level=self.level)
     
+    def test_default_userprefs(self):
+        user = um.User.objects.create(
+            first_name="Test",
+            last_name="User",
+            email="test@example.com",
+            username="testuser"
+        )
+        self.assertIsNotNone(user.userpref)
+
     def test_students(self):
         user = um.User.objects.first()
         user.roles.add(um.AtomicRole.create(student=True, level=self.level.pk))

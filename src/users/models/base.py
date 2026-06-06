@@ -47,6 +47,8 @@ def get_username(first_name="", last_name="", **kwargs):
     return uname
 
 class MyUserManager(UserManager):
+    # Pour l'accès aux profs/colleurs par classe,
+    # utiliser plutôt users.cache
 
     def create(self, username=None, **kwargs):
         if username is None:
@@ -138,6 +140,14 @@ class MyUserManager(UserManager):
         if subject is None:
             return self.exclude(roles__c={})
         return self.filter(is_active=True, roles__c__contains={str(subject.pk): True})
+    
+    def get_queryset(self):
+        """
+        On veut userpref par défaut sur toutes les instances.
+
+        Utiliser plutôt la property prefs de chaque instance pour y accéder.
+        """
+        return super().get_queryset().select_related("userpref")
 
 class User(AbstractUser):
     # type hint
@@ -195,6 +205,8 @@ class User(AbstractUser):
         if self.email is not None:
             self.email = self.email.lower()
         super().save(*args, **kwargs)
+        if not hasattr(self, "userpref") or self.userpref is None:
+            UserPref.objects.create(user=self)
     
     def get_full_name(self) -> str:
         if self.title:
@@ -212,6 +224,11 @@ class User(AbstractUser):
     def short_name(self):
         return f"{self.last_name} {self.first_name[0]}."
     
+    @property
+    def prefs(self) -> "UserPref":
+        if hasattr(self, "userpref") and self.userpref is not None:
+            return self.userpref
+        return UserPref(user=self)
     
     def name_dict(self):
         return {

@@ -3,10 +3,9 @@
 #from allauth.account.forms import LoginForm
 
 def set_prefs(request):
-    if hasattr(request.user, "userpref"):
-        ctx = request.user.userpref.to_context_data()
-    else:
-        ctx = {}
+    ctx = {}
+    if hasattr(request.user, "prefs"):
+        ctx = request.user.prefs.to_context_data()
     if "darktheme" in request.COOKIES:
         dark = request.COOKIES["darktheme"] == "enabled"
         ctx["dark_theme"] = dark

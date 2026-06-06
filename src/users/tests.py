@@ -123,7 +123,7 @@ class TestUserPref(TestCase, CreateUserMixin):
 
     def test_context(self):
         self.create_users()
-        pref = um.UserPref.objects.create(user=self.staff_user)
+        pref = self.staff_user.prefs
         ctx = pref.to_context_data()
         self.assertIn("dark_theme", ctx)
         self.assertFalse(ctx["dark_theme"])
@@ -152,7 +152,7 @@ class TestUserPref(TestCase, CreateUserMixin):
     
     def test_cookie_precedence(self):
         self.create_users()
-        pref = um.UserPref.objects.create(user=self.staff_user)
+        pref = self.staff_user.prefs
         url = TestURL(self, "", "account_login", status=200)
         resp = url.test()
         self.assertNotIn("dark_theme", resp.context)
