@@ -83,7 +83,12 @@ class IsTeacher(Permission):
     Permission for teacher role.
     """
     
+    def __init__(self, strict=False):
+        self.strict = strict
+
     def has_permission(self, user, level=None, subject=None) -> bool:
+        if self.strict:
+            return subject is not None and user.is_authenticated and user.roles.is_teacher(subject=subject)
         if level is not None:
             return user in uc.teachers.get(level)
         return user.is_authenticated and user.roles.is_teacher(level=level, subject=subject)

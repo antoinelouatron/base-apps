@@ -9,18 +9,21 @@ import users.models as um
 class ColleEventAtomic(afe.PeriodicAtomic):
 
     subject = forms.CharField(required=False)
+    last_name = forms.CharField(required=False, label="Nom du professeur")
+    first_name = forms.CharField(required=False, label="Prénom du professeur")
+    email = forms.EmailField(required=False, label="Email du professeur")
     teacher = forms.CharField(required=False)
     civilite = forms.CharField(required=False)
     classroom = forms.CharField(required=False)
     day = forms.CharField()
-    order = forms.IntegerField(required=False)
+    #order = forms.IntegerField(required=False)
 
     logger = logging.getLogger(__name__)
 
     class Meta:
         model = am.ColleEvent
         fields = ["beghour", "endhour", "day",
-        "subject", "teacher", "classroom", "order", "abbrev", "subj"]
+        "subject", "teacher", "classroom", "abbrev", "subj"]
 
     def clean_day(self):
         val = self.cleaned_data["day"]
@@ -35,21 +38,40 @@ class ColleEventAtomic(afe.PeriodicAtomic):
 
     def clean(self):
         """
-        Defaults to a random subject and teacher
+        SI aucun utilisateur avec l'email fourni n'est trouvé,
+        on crée un nouvel utilisateur.
+
+        Dans tous les cas on ajoute le rôle colleur correspondant à l'utilisateur
+        référencé.
         """
+        # Une Validation Error au niveau parent déclanche quand même
+        # construct_instance, même si aucun teacher n'est encore là.
+        self.cleaned_data["teacher"] = None
         cd = super().clean()
-        teacher = um.User.objects.filter(
-            title=cd.get("civilite", ""), last_name=cd.get("teacher", ""))
+
+        teacher = um.User.objects.filter(email__iexact=cd["email"])
+        subject = cd["subj"] # voir classe parent
         if teacher.count() == 1:
+            self.logger.info('User found "%s"', cd["email"])
             teacher = teacher[0]
         elif teacher.count() > 1:
-            self.logger.info('Multiple user "%s" "%s"', cd["civilite"], cd["teacher"])
-            teacher = um.User.objects.teachers()[0]
+            self.logger.info('Multiple user "%s"', cd["email"])
+            teacher = teacher[0]
         else:
-            self.logger.info('Missing teacher "%s" "%s"', cd["civilite"], cd["teacher"])
-            teacher = um.User.objects.create_teacher(last_name=cd["teacher"],
-                title=cd["civilite"],first_name="")
+            self.logger.info('Missing teacher "%s"', cd["email"])
+            # create et pas create_colleur, vu qu'on ajoute le rôle colleur juste après
+            teacher = um.User.objects.create(
+                email=cd["email"],
+                first_name=cd["first_name"],
+                last_name=cd["last_name"],
+                title=cd["civilite"],
+            )
         cd["teacher"] = teacher
+        teacher.roles.add(um.AtomicRole.create(
+            colleur=True,
+            subject=subject,
+        ))
+        teacher.save()
         return cd
     
     def save(self, commit=True):
@@ -62,15 +84,36 @@ class ColleEventAtomic(afe.PeriodicAtomic):
 
 class ColleEventImport(afe.PeriodicImport):
 
+    DEFAULT_NAME_MAPPING = {
+        "beghour": "Début",
+        "endhour": "Fin",
+        "day": "Jour",
+        "subject": "Matière",
+        "last_name": "Nom",
+        "first_name": "Prénom",
+        "email": "Email",
+        "civilite": "Civilité",
+        "classroom": "Salle",
+        "abbrev": "ID"
+    }
+
     class Meta:
         model = am.ColleEvent
         fields = []
         name_fields = [
-            "beghour", "endhour", "day", "subject",
-            "teacher", "civilite", "classroom", "order", "abbrev"
+            "last_name", "first_name", "email","beghour", "endhour", "day",
+            "subject", "civilite", "classroom", "abbrev"
         ]
         form = ColleEventAtomic
         auto_populate = True
+        name_attrs = {
+            "last_name": {"label": "Nom du professeur", "placeholder": "Nom"},
+            "first_name": {"label": "Prénom du professeur", "placeholder": "Prénom"},
+            "email": {"label": "Email du professeur", "placeholder": "Email"},
+            "civilite": {"label": "Civilité du professeur", "placeholder": "Civilité"},
+            "classroom": {"label": "Salle", "placeholder": "Salle"},
+            "abbrev": {"label": "ID", "placeholder": "Numéro du créneau"}
+        }
 
 class CollePlanningAtomic(forms.ModelForm):
 

@@ -82,15 +82,6 @@ class TestPeriodicForm(TestCase, CreateUserMixin):
         self.assertIn("_attendance_string", form.errors)
         self.assertEqual(am.PeriodicEvent.objects.count(), 0)
 
-# TEACHERS = [
-#     {"last_name": "Louatron", "first_name": "", "title": "M."},
-#     {"last_name": "Thibierge", "first_name": "", "title": "M."},
-#     {"last_name": "Agoutin", "first_name": "", "title": "Mme."},
-#     {"last_name": "Bourdelle", "first_name": "", "title": "M."},
-#     {"last_name": "Pigny", "first_name": "", "title": "M."},
-#     {"last_name": "Levavasseur", "first_name": "", "title": "M."},
-# ]
-
 def create_subjects(level):
     # see fixture file
     subjects_names = ["math", "physique", "francais", "anglais",
@@ -169,6 +160,7 @@ class TestImportForms(TestCase, CreateUserMixin):
         self.create_students(16, level=self.level)
         fpath = self.base_dir / "fixtures" / "colles.csv"
         self.assertTrue(fpath.exists())
+        self.assertEqual(um.User.objects.colleurs().count(), 0)
         with open(fpath, "rb") as upl_file:
             upl_dict = {"import_file": InMemoryUploadedFile(
                 upl_file, None, "colles.csv",
@@ -179,6 +171,7 @@ class TestImportForms(TestCase, CreateUserMixin):
             self.assertTrue(form.is_valid())
             form.save()
             self.assertNotEqual(am.ColleEvent.objects.count(), 0)
+            self.assertEqual(um.User.objects.colleurs().count(), 20)
         for nb in range(3, 26):
             am.Week.objects.create(nb=nb,
                 begin=datetime.date.today() + datetime.timedelta(7*(nb-3)),
@@ -196,24 +189,6 @@ class TestImportForms(TestCase, CreateUserMixin):
             self.assertTrue(form.is_valid())
             form.save()
             self.assertNotEqual(am.CollePlanning.objects.count(), 0)
-    
-    # def test_colle_event_cleaning(self):
-    #     data = {
-    #         "beghour": "8:0:0",
-    #         "endhour": "10:0:0",
-    #         "day": "3",
-    #         "civilite": "M.",
-    #     }
-    #     form = af.ColleEventAtomic(data=data)
-    #     self.assertTrue(form.is_valid())
-    #     self.assertLogs("agenda.forms.colles", "INFO")
-    #     del data["civilite"]
-    #     form = af.ColleEventAtomic(data=data)
-    #     self.assertTrue(form.is_valid())
-    #     self.assertLogs("agenda.forms.colles", "INFO")
-    #     data["day"] = "9"
-    #     form = af.ColleEventAtomic(data=data)
-    #     self.assertFalse(form.is_valid())
     
     def test_colle_planning_cleaning(self):
         self.create_students(16)

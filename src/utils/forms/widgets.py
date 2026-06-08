@@ -62,6 +62,9 @@ class DatePicker(widgets.DateInput):
     def __init__(self, attrs=None, format="%Y-%m-%d") -> None:
         super().__init__(attrs, format)
 
+class TimePicker(widgets.TimeInput):
+    input_type = "time"
+
 class DataSelect(widgets.Select):
     """
     Extends the Select widget to add data from instances.

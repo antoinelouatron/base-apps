@@ -135,6 +135,13 @@ class PeriodicImport(FileImportForm):
             "day", "periodicity", "classroom", "_attendance_string"]
         auto_populate = True
     
+    def __init__(self, *args, level=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.level = level
+        if level is not None:
+            self.fields["level"].widget = forms.HiddenInput()
+            self.fields["level"].initial = level
+    
     def _get_subject_dict(self, level: um.Level) -> dict[str, int]:
         """
         Return a dictionary mapping subject short names to Subject instances
@@ -143,7 +150,7 @@ class PeriodicImport(FileImportForm):
         return {subj.name.lower(): subj for subj in am.Subject.objects.filter(level=level)}
     
     def clean_level(self):
-        self.level = self.cleaned_data.get("level")
+        self.level = self.level or self.cleaned_data.get("level")
         if self.level is None:
             raise forms.ValidationError("La classe doit être renseignée")
         self.subjects = self._get_subject_dict(self.level)

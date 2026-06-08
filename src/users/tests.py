@@ -232,3 +232,18 @@ class TestPermissions(TestCase, CreateUserMixin):
         self.assertTrue(up.AllowAll().has_permission(user))
         self.assertTrue(up.AllowAll().has_permission(user, level1))
         self.assertTrue(up.AllowAll().has_permission(user, subject=subject))
+    
+    def test_strict_teacher(self):
+        self.create_users()
+        user = self.users[0]
+        level1 = um.Level.objects.create(name="Level 1")
+        subject = um.Subject.objects.create(name="subject", level=level1)
+        subject2 = um.Subject.objects.create(name="subject2", level=level1)
+        user.roles.add(um.AtomicRole.create(teacher=True,subject=subject))
+        user.save()
+        perm = up.IsTeacher(strict=True)
+        self.assertTrue(perm.has_permission(user, subject=subject))
+        self.assertFalse(perm.has_permission(user, subject=subject2))
+        self.assertFalse(perm.has_permission(user, level=level1))
+        perm.strict = False
+        self.assertTrue(perm.has_permission(user, level=level1))
