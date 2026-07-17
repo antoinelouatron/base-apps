@@ -15,11 +15,11 @@ class EMailBackend(ModelBackend):
             username=username.lower()
         try:
             user = User.objects.get(email=username)
-            if check_password(password, user.password):
+            if check_password(password, user.password) and self.user_can_authenticate(user):
                 return user
             else:
                 return None
-        except User.DoesNotExist:
+        except (User.DoesNotExist, User.MultipleObjectsReturned):
             # Run the default password hasher once to reduce the timing
             # difference between an existing and a nonexistent user (#20760).
             User().set_password(password)

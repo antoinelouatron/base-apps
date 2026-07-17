@@ -26,6 +26,13 @@ class ColleEvent(events.AbstractPeriodic):
     class Meta:
         verbose_name = "Créneau de colle"
         verbose_name_plural = "Créneaux de colles"
+        constraints = [
+            models.UniqueConstraint(
+                fields=["subj", "abbrev"],
+                name="colleevent_unique_abbrev_subject",
+                violation_error_message="Un créneau avec cette matière et cet ID existe déjà."
+            )
+        ]
 
     teacher = models.ForeignKey(User, on_delete=models.CASCADE, verbose_name="Professeur")
     order = models.PositiveSmallIntegerField(default=0)

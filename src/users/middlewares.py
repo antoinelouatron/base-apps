@@ -24,13 +24,19 @@ class SeeAsMiddleware:
         if request.GET.get("reset_user"):
             request.session.pop("see_as", None)
         elif see_as_user and self.can_see_as(request.user):
-            target_user = um.User.objects.filter(id=see_as_user).first()
+            try:
+                target_user = um.User.objects.filter(id=see_as_user).first()
+            except (ValueError, TypeError):
+                # id non numérique dans le paramètre GET
+                target_user = None
             if target_user and target_user <= request.user:
                 request.session["see_as"] = see_as_user
                 request.user = target_user
             else:
+                # cible inexistante ou non autorisée : on n'agit pas comme elle
+                # et on purge la session pour ne pas persister un état invalide.
                 request.user = um.AnonymousUser()
-                request.session["see_as"] = see_as_user
+                request.session.pop("see_as", None)
 
         response = self.get_response(request)
         return response

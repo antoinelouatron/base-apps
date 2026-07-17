@@ -73,8 +73,10 @@ delete ns.django.debug;
 <body class="min-h-screen min-w-screen bg-surface text-primary{% if dark_theme%} dark{% endif %}">
 {% block body %}
 {% block top_nav %}
-{% include "menu_bar.html" %}
+{% include "components/menu_bar.html" %}
 {% endblock top_nav %}
+{% block content %}
+{% endblock content %}
 {% endblock body %}
 </body>
 </html>

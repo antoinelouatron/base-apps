@@ -11,7 +11,7 @@ class ColleEventAtomic(afe.PeriodicAtomic):
     subject = forms.CharField(required=False)
     last_name = forms.CharField(required=False, label="Nom du professeur")
     first_name = forms.CharField(required=False, label="Prénom du professeur")
-    email = forms.EmailField(required=False, label="Email du professeur")
+    email = forms.EmailField(required=True, label="Email du professeur")
     teacher = forms.CharField(required=False)
     civilite = forms.CharField(required=False)
     classroom = forms.CharField(required=False)
@@ -35,6 +35,12 @@ class ColleEventAtomic(afe.PeriodicAtomic):
         except ValueError:
             raise forms.ValidationError("Jour incorrect : %(val)s", params={"val": val},
                 code="bad_day")
+    
+    def clean_email(self):
+        val = self.cleaned_data["email"]
+        if not val:
+            raise forms.ValidationError("Email manquant", code="missing_email")
+        return val.strip().lower()
 
     def clean(self):
         """
@@ -44,10 +50,13 @@ class ColleEventAtomic(afe.PeriodicAtomic):
         Dans tous les cas on ajoute le rôle colleur correspondant à l'utilisateur
         référencé.
         """
-        # Une Validation Error au niveau parent déclanche quand même
+        # Une Validation Error au niveau parent déclenche quand même
         # construct_instance, même si aucun teacher n'est encore là.
         self.cleaned_data["teacher"] = None
         cd = super().clean()
+
+        if "email" not in cd or "subj" not in cd:
+            raise forms.ValidationError("Données manquantes")
 
         teacher = um.User.objects.filter(email__iexact=cd["email"])
         subject = cd["subj"] # voir classe parent
@@ -176,11 +185,22 @@ class CollePlanningImport(FileImportForm):
 
     class Meta:
         model = am.CollePlanning
+        exclude = ["week", "event", "group", "postponed"]
         name_fields = ["week", "event", "group"]
         form = CollePlanningAtomic
         auto_populate = True
+
+    def __init__(self, *args, level=None, **kwargs):
+        super().__init__(*args, **kwargs)
+        if level is not None:
+            self.level = level
+            self.fields["level"].widget = forms.HiddenInput()
+            self.fields["level"].initial = self.level.pk
+        
     
     def clean_level(self):
+        if hasattr(self, "level"):
+            return self.level
         self.level = self.cleaned_data.get("level")
         if self.level is None:
             raise forms.ValidationError("La classe doit être renseignée")

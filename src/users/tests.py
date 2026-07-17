@@ -2,11 +2,16 @@
 date: 2024-03-30
 """
 
+from django.contrib.sessions.backends.db import SessionStore
+from django.test import RequestFactory
+
 from dev.test_utils import TestCase
 from dev.test_data import CreateUserMixin
 from dev.test_view import JsonURL, TestURL
+import users.emailbackend as ueb
 import users.forms as uf
 import users.forms.imports as ufi
+import users.middlewares as umw
 import users.models as um
 import users.permissions as up
 User = um.User
@@ -14,28 +19,16 @@ User = um.User
 class TestModels(TestCase):
 
     def test_user_creation(self):
-        # minimal data
-        with self.assertRaises(ValueError):
-            um.User.objects.create(last_name="moia")
-        with self.assertRaises(ValueError):
-            um.User.objects.create(first_name="moia")
-        u1 = um.User.objects.create(username="moia")
+        u1 = um.User.objects.create(email="moia@example.com")
         self.assertIsNotNone(u1.id)
         self.assertFalse(u1.teacher)
-        u2 = um.User.objects.create(last_name="moi", first_name="aa")
-        self.assertEqual(u2.username, "moaa")
+        u2 = um.User.objects.create(email="moi2@example.com")
         self.assertFalse(u2.teacher)
         level = um.Level.objects.create(name="L1")
         subject = um.Subject.objects.create(name="S1", level=level)
-        u3 = um.User.objects.create_teacher(last_name="moi", first_name="aa",
+        u3 = um.User.objects.create_teacher(email="moi3@example.com",
             subject=subject)
         self.assertTrue(u3.teacher)
-        self.assertEqual(u3.username, "maa")
-        u3 = um.User.objects.create_teacher(last_name="moi", first_name="aa",
-            subject=subject,)
-        self.assertTrue(u3.teacher)
-        self.assertNotEqual(u3.username, "maa")
-        self.assertEqual(len(u3.username), 8, "default random length")
         u4 = um.User.objects.create_student(username="student")
         self.assertFalse(u4.teacher)
         self.assertEqual(um.ColleGroup.objects.count(), 0)
@@ -58,18 +51,18 @@ class TestModels(TestCase):
         self.assertEqual(u2.get_full_name(), u2.display_name)
         self.assertEqual(u2.short_name, "moi a.")
     
-    def test_username_creation(self):
-        first = "nam"
-        last = "ema"
-        for i in range(3):
-            user = um.User.objects.create(
-                first_name=first,
-                last_name=last,)
-            self.assertEqual(len(user.username), 4)
-        user = um.User.objects.create(
-                first_name=first,
-                last_name=last,)
-        self.assertEqual(len(user.username), 8)
+    # def test_username_creation(self):
+    #     first = "nam"
+    #     last = "ema"
+    #     for i in range(3):
+    #         user = um.User.objects.create(
+    #             first_name=first,
+    #             last_name=last,)
+    #         self.assertEqual(len(user.username), 4)
+    #     user = um.User.objects.create(
+    #             first_name=first,
+    #             last_name=last,)
+    #     self.assertEqual(len(user.username), 8)
     
     def test_signal(self):
         level = um.Level.objects.create(name="L1")
@@ -247,3 +240,91 @@ class TestPermissions(TestCase, CreateUserMixin):
         self.assertFalse(perm.has_permission(user, level=level1))
         perm.strict = False
         self.assertTrue(perm.has_permission(user, level=level1))
+
+
+class TestEMailBackend(TestCase):
+
+    def setUp(self):
+        self.backend = ueb.EMailBackend()
+        self.user = um.User.objects.create_user("mail", "mail@example.com")
+        self.user.set_password("secret")
+        self.user.save()
+
+    def test_valid_credentials(self):
+        user = self.backend.authenticate(
+            None, username="Mail@Example.com", password="secret")
+        self.assertEqual(user, self.user)
+
+    def test_wrong_password(self):
+        self.assertIsNone(self.backend.authenticate(
+            None, username="mail@example.com", password="wrong"))
+
+    def test_unknown_email(self):
+        self.assertIsNone(self.backend.authenticate(
+            None, username="ghost@example.com", password="secret"))
+
+    def test_inactive_user_rejected(self):
+        # un utilisateur désactivé ne doit pas pouvoir s'authentifier
+        self.user.is_active = False
+        self.user.save()
+        self.assertIsNone(self.backend.authenticate(
+            None, username="mail@example.com", password="secret"))
+
+
+class TestSeeAsMiddleware(TestCase):
+
+    def setUp(self):
+        self.factory = RequestFactory()
+        # get_response identité : on inspecte la requête après middleware
+        self.mw = umw.SeeAsMiddleware(lambda request: request)
+        self.level = um.Level.objects.create(name="L1")
+        subject = um.Subject.objects.create(name="Maths", level=self.level)
+        self.teacher = um.User.objects.create_user("teach", "teach@example.com")
+        self.teacher.roles.add(um.AtomicRole.create(teacher=True, subject=subject))
+        self.teacher.save()
+        self.student = um.User.objects.create_student(
+            username="stud", email="stud@example.com", level=self.level)
+        self.admin = um.User.objects.create_superuser(
+            "root", "root@example.com", "pw")
+
+    def _request(self, user, **params):
+        request = self.factory.get("/", params)
+        request.user = user
+        request.session = SessionStore()
+        return self.mw(request)
+
+    def test_teacher_sees_as_student(self):
+        request = self._request(self.teacher, see_as=self.student.pk)
+        self.assertEqual(request.user, self.student)
+        self.assertEqual(request.session.get("see_as"), str(self.student.pk))
+
+    def test_teacher_cannot_see_as_superuser(self):
+        # cible refusée : requête anonymisée, session non polluée
+        request = self._request(self.teacher, see_as=self.admin.pk)
+        self.assertFalse(request.user.is_authenticated)
+        self.assertNotIn("see_as", request.session)
+
+    def test_invalid_target_not_stored(self):
+        # id inexistant : la session ne doit pas conserver la valeur
+        request = self._request(self.teacher, see_as=99999)
+        self.assertFalse(request.user.is_authenticated)
+        self.assertNotIn("see_as", request.session)
+
+    def test_non_numeric_target(self):
+        # valeur non numérique : pas d'erreur 500
+        request = self._request(self.teacher, see_as="abc")
+        self.assertFalse(request.user.is_authenticated)
+        self.assertNotIn("see_as", request.session)
+
+    def test_student_cannot_use_see_as(self):
+        request = self._request(self.student, see_as=self.teacher.pk)
+        self.assertEqual(request.user, self.student)
+        self.assertNotIn("see_as", request.session)
+
+    def test_reset_user(self):
+        request = self.factory.get("/", {"reset_user": "1"})
+        request.user = self.teacher
+        request.session = SessionStore()
+        request.session["see_as"] = str(self.student.pk)
+        request = self.mw(request)
+        self.assertNotIn("see_as", request.session)

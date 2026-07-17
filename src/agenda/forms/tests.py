@@ -215,7 +215,7 @@ class TestImportForms(TestCase, CreateUserMixin):
                                       groups=um.ColleGroup.objects.all())
         self.assertFalse(form.is_valid())
         self.assertEqual(len(form.errors), 1)
-        event = am.ColleEvent.objects.create(
+        am.ColleEvent.objects.create(
             beghour=datetime.time(8, 0, 0),
             endhour=datetime.time(10, 0, 0),
             day=3, subject="test", abbrev="test",

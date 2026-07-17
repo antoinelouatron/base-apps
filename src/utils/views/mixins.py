@@ -8,6 +8,7 @@ import warnings
 from django.conf import settings
 from django.contrib.auth.mixins import UserPassesTestMixin
 from django.http import JsonResponse
+from django.template import RequestContext
 from django.views.generic import TemplateView, View
 import django.template as template
 
@@ -142,7 +143,7 @@ class RenderableMixin():
 
     def get_data(self, context, **kwargs):
         tpl = template.loader.get_template(getattr(self, self.template_attribute))
-        html = tpl.render(context)
+        html = tpl.render(context, request=self.request)
         kwargs[self.html_context_name] = html
         return kwargs
 

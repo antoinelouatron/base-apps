@@ -274,7 +274,7 @@ class TestLogin(TestCase, CreateUserMixin):
         self.assertIn("form", resp.context)
         url.method = "post"
         url.data = {
-            "username": self.users[0].username,
+            "username": self.users[0].email,
             "password": "wrongpassword"
         }
         url.status = 200
@@ -284,7 +284,7 @@ class TestLogin(TestCase, CreateUserMixin):
         self.users[0].set_password("password")
         self.users[0].save()
         url.data = {
-            "username": self.users[0].username,
+            "username": self.users[0].email,
             "password": "password"
         }
         resp = url.test(skip_title=True, follow=True)

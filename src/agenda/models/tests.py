@@ -811,14 +811,14 @@ class TestTimeTables(WithWeeks):
             beghour=time(10),
             endhour=time(11),
             day=1,
-            subject="math"
+            subject="math", abbrev="1"
         ),
         am.ColleEvent.objects.create(
             teacher=teachers[1],
             beghour=time(10),
             endhour=time(11),
             day=1,
-            subject="math"
+            subject="math", abbrev="2"
         )]
         groups = [um.ColleGroup.objects.get(nb=i) for i in (1,2)]
         cps = [
@@ -865,28 +865,28 @@ class TestTimeTables(WithWeeks):
             beghour=time(16),
             endhour=time(17),
             day=1,
-            subj=self.subject
+            subj=self.subject, abbrev="1"
         ),
         am.ColleEvent.objects.create(
             teacher=teachers[1],
             beghour=time(16),
             endhour=time(17),
             day=1,
-            subj=self.subject
+            subj=self.subject, abbrev="2"
         ),
         am.ColleEvent.objects.create(
             teacher=teachers[0],
             beghour=time(15),
             endhour=time(16),
             day=2,
-            subj=self.subject
+            subj=self.subject, abbrev="3"
         ),
         am.ColleEvent.objects.create(
             teacher=teachers[1],
             beghour=time(15),
             endhour=time(16),
             day=2,
-            subj=self.subject
+            subj=self.subject, abbrev="4"
         )]
         cps = []
         for ev in colle_evs:

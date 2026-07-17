@@ -2,9 +2,9 @@
 See roles.py for structuring models (Level, Subject, ...)
 """
 
-import bisect
-import random
-import string
+# import bisect
+# import random
+# import string
 
 from django.contrib.auth.models import AbstractUser, UserManager, AnonymousUser
 from django.contrib.postgres.indexes import GinIndex
@@ -15,47 +15,47 @@ from django.utils.translation import gettext_lazy as _
 
 from . import roles as umr
 
-def _randstring(n=8):
-    random.seed()
-    chars = string.ascii_lowercase
-    return "".join(random.choice(chars) for _ in range(n))
+# def _randstring(n=8):
+#     random.seed()
+#     chars = string.ascii_lowercase
+#     return "".join(random.choice(chars) for _ in range(n))
 
-def get_username(first_name="", last_name="", **kwargs):
-    """
-    default username : last_name[:8] + first_name[0].
-    add letters of first_name if user already exists.
+# def get_username(first_name="", last_name="", **kwargs):
+#     """
+#     default username : last_name[:8] + first_name[0].
+#     add letters of first_name if user already exists.
 
-    returns a unique username.
-    """
-    fname = text.slugify(first_name)
-    lname = text.slugify(last_name)
-    usernames = [u["username"] for u in User.objects.all().values("username").order_by('username')]
-    usernb = len(usernames)
-    n = min(len(lname) + 1, 8)
-    # first try
-    for i in range(1, n):
-        uname = lname[:(n - i)] + fname[:i]
-        index = bisect.bisect_left(usernames, uname)
-        if index >= usernb or usernames[index] != uname:
-            return uname
-    # random username as fallback
-    uname = _randstring()
-    index = bisect.bisect_left(usernames, uname)
-    while index < usernb and usernames[index] == uname:
-        uname = _randstring()
-        index = bisect.bisect_left(usernames, uname)
-    return uname
+#     returns a unique username.
+#     """
+#     fname = text.slugify(first_name)
+#     lname = text.slugify(last_name)
+#     usernames = [u["username"] for u in User.objects.all().values("username").order_by('username')]
+#     usernb = len(usernames)
+#     n = min(len(lname) + 1, 8)
+#     # first try
+#     for i in range(1, n):
+#         uname = lname[:(n - i)] + fname[:i]
+#         index = bisect.bisect_left(usernames, uname)
+#         if index >= usernb or usernames[index] != uname:
+#             return uname
+#     # random username as fallback
+#     uname = _randstring()
+#     index = bisect.bisect_left(usernames, uname)
+#     while index < usernb and usernames[index] == uname:
+#         uname = _randstring()
+#         index = bisect.bisect_left(usernames, uname)
+#     return uname
 
 class MyUserManager(UserManager):
     # Pour l'accès aux profs/colleurs par classe,
     # utiliser plutôt users.cache
 
-    def create(self, username=None, **kwargs):
-        if username is None:
-            if "last_name" not in kwargs or "first_name" not in kwargs:
-                raise ValueError("No username nor first/last name provided")
-            username = get_username(**kwargs)
-        return super().create_user(username, **kwargs)
+    # def create(self, username=None, **kwargs):
+    #     if username is None:
+    #         if "last_name" not in kwargs or "first_name" not in kwargs:
+    #             raise ValueError("No username nor first/last name provided")
+    #         username = get_username(**kwargs)
+    #     return super().create_user(username, **kwargs)
     
     def create_teacher(self, subject=None, **kwargs):
         #kwargs["teacher"] = True
@@ -152,6 +152,9 @@ class MyUserManager(UserManager):
 class User(AbstractUser):
     # type hint
     roles: umr.Roles
+
+    USERNAME_FIELD = "email"
+    REQUIRED_FIELDS = ["first_name", "last_name"]
     
     class Meta:
         verbose_name = "Utilisateur"
@@ -171,6 +174,9 @@ class User(AbstractUser):
     MX = "Mx."
     # override blank=True
     email = models.EmailField(_("adresse email"), blank=False)
+    # override unique and required 
+    username = models.CharField(_("nom d'utilisateur"), max_length=150,
+        blank=True, null=True)    
     title = models.CharField(
         max_length=4,
         choices={
@@ -200,8 +206,8 @@ class User(AbstractUser):
         return self.roles.is_student()
 
     def save(self, *args, **kwargs):
-        if self.username is None or self.username == "":
-            self.username = get_username(first_name=self.first_name, last_name=self.last_name)
+        # if self.username is None or self.username == "":
+        #     self.username = get_username(first_name=self.first_name, last_name=self.last_name)
         if self.email is not None:
             self.email = self.email.lower()
         super().save(*args, **kwargs)
