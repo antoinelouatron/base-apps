@@ -1,9 +1,15 @@
 """
 Usage : subclass one of the above mixin and use corresponding method
 in setUp method of a TestCase class.
+
+Le modèle User (et les managers de rôles) est importé paresseusement : ce
+module doit rester importable dans un projet qui n'embarque pas l'app users
+(les méthodes create_students/create_teachers ne sont alors simplement jamais
+appelées).
 """
 
-import users.models as um
+from django.contrib.auth import get_user_model
+
 
 class CreateUserMixin():
 
@@ -11,17 +17,19 @@ class CreateUserMixin():
         """
         create self.staff_user, self.admin_user and self.users : list
         """
-        self.staff_user = um.User.objects.create_user(username="staff", is_staff=True,
+        User = get_user_model()
+        self.staff_user = User.objects.create_user(username="staff", is_staff=True,
             email="staff@example.com")
-        self.admin_user = um.User.objects.create_superuser(username="admin",
+        self.admin_user = User.objects.create_superuser(username="admin",
             email="admin@example.com")
         self.users = []
         for i in range(nb):
             self.users.append(
-                um.User.objects.create_user(f"user{i}", email=f"user{i}@example.com")
+                User.objects.create_user(f"user{i}", email=f"user{i}@example.com")
             )
-    
+
     def create_students(self, nb=3, min=0, level=None):
+        import users.models as um
         self.students = []
         for i in range(min, min+nb):
             self.students.append(
@@ -31,8 +39,9 @@ class CreateUserMixin():
                     email=f"student{i}_{level}@example.com")
             )
         return self.students
-    
+
     def create_teachers(self, teach_list: list[dict], level=None):
+        import users.models as um
         self.teachers = []
         if level is None:
             level = um.get_default_level(instance=True)

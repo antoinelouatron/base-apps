@@ -1,80 +1,20 @@
 """
 date: 2025-07-23
+
+Permissions concrètes liées aux rôles du modèle User. La structure
+combinatoire générique (Permission, AllowAll, & | ~) vit dans utils.permissions.
+On la ré-exporte ici pour compatibilité des imports existants (up.AllowAll, ...).
 """
 
-import abc
-
 import users.cache as uc
+from utils.permissions import Permission, AllowAll, _OR, _AND, _NOT  # noqa: F401
 
-class Permission(abc.ABC):
-    """
-    Abstract base class for permissions.
-
-    Supports logical operations like AND (&), OR (|), and NOT (~).
-    """
-    
-    @abc.abstractmethod
-    def has_permission(self, user, level=None, subject=None) -> bool:
-        """
-        Check if the user has permission to perform an action on the object.
-        """
-        pass
-
-    def __or__(self, other: "Permission") -> "Permission":
-        return _OR(self, other)
-    
-    def __and__(self, other: "Permission") -> "Permission":
-        return _AND(self, other)
-
-    def __invert__(self) -> "Permission":
-        return _NOT(self)
-
-class AllowAll(Permission):
-    """
-    Permission that allows all actions.
-    """
-    
-    def has_permission(self, user, level=None, subject=None) -> bool:
-        return True
-
-class _OR(Permission):
-    """
-    OR permission, checks if any of the given permissions are granted.
-    """
-    
-    def __init__(self, *permissions: Permission):
-        self.permissions = permissions
-    
-    def has_permission(self, user, level=None, subject=None) -> bool:
-        return any(p.has_permission(user, level, subject) for p in self.permissions)
-
-class _AND(Permission):
-    """
-    AND permission, checks if all of the given permissions are granted.
-    """
-    
-    def __init__(self, *permissions: Permission):
-        self.permissions = permissions
-    
-    def has_permission(self, user, level=None, subject=None) -> bool:
-        return all(p.has_permission(user, level, subject) for p in self.permissions)
-
-class _NOT(Permission):
-    """
-    NOT permission, checks if the given permission is not granted.
-    """
-    
-    def __init__(self, permission: Permission):
-        self.permission = permission
-    
-    def has_permission(self, user, level=None, subject=None) -> bool:
-        return not self.permission.has_permission(user, level, subject)
 
 class IsStudent(Permission):
     """
     Permission for student role.
     """
-    
+
     def has_permission(self, user, level=None, subject=None) -> bool:
         return user.is_authenticated and user.roles.is_student(level)
 
@@ -82,7 +22,7 @@ class IsTeacher(Permission):
     """
     Permission for teacher role.
     """
-    
+
     def __init__(self, strict=False):
         self.strict = strict
 
@@ -97,7 +37,7 @@ class IsColleur(Permission):
     """
     Permission for colleur role.
     """
-    
+
     def has_permission(self, user, level=None, subject=None) -> bool:
         if level is not None:
             return user in uc.colleurs.get(level)
@@ -107,7 +47,7 @@ class IsSecretary(Permission):
     """
     Permission for secretary role.
     """
-    
+
     def has_permission(self, user, level=None, subject=None) -> bool:
         return user.is_authenticated and user.roles.is_secretary()
 
@@ -115,7 +55,7 @@ class IsAdmin(Permission):
     """
     Permission for school admin role.
     """
-    
+
     def has_permission(self, user, level=None, subject=None) -> bool:
         return user.is_authenticated and user.roles.is_admin()
 
@@ -123,7 +63,7 @@ class IsRefTeacher(Permission):
     """
     Permission for referent teacher role.
     """
-    
+
     def has_permission(self, user, level=None, subject=None) -> bool:
         return user.is_authenticated and user.roles.is_ref_teacher(level)
 
@@ -131,7 +71,7 @@ class IsSuperUser(Permission):
     """
     Permission for superusers.
     """
-    
+
     def has_permission(self, user, level=None, subject=None) -> bool:
         return user.is_authenticated and user.is_superuser
 
@@ -142,3 +82,7 @@ SECRETARY = IsSecretary()
 SCHOOL_ADMIN = IsAdmin()
 REF_TEACHER = IsRefTeacher()
 SUPERUSER = IsSuperUser()
+
+# Permission concrète consommée par base_archives via le hook settings
+# ARCHIVES_DOWNLOAD_PERMISSION (cf. base_archives.views).
+ARCHIVES_DOWNLOAD = SECRETARY | SCHOOL_ADMIN

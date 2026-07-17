@@ -3,19 +3,31 @@ date: 2024-10-14
 
 Dynamic view for archive home.
 """
-from django import urls
 from django.conf import settings
 from django.contrib import messages
 from django.shortcuts import redirect
+from django.utils.module_loading import import_string
 
 from django_sendfile import sendfile
 
 from base_archives import db_save
-import users.permissions as up
+from utils.permissions import AllowAll
 from utils.views import mixins, View
 
+
+def _download_permission():
+    """
+    Permission requise pour télécharger la base. Le consommateur la fournit via
+    le setting ARCHIVES_DOWNLOAD_PERMISSION (chemin pointé vers une instance de
+    Permission, importée à la construction de l'URLconf donc apps déjà prêtes) ;
+    par défaut, aucune restriction.
+    """
+    dotted = getattr(settings, "ARCHIVES_DOWNLOAD_PERMISSION", "")
+    return import_string(dotted) if dotted else AllowAll()
+
+
 class DownloadDb(mixins.PermissionMixin, View):
-    PERMISSION = up.SECRETARY | up.SCHOOL_ADMIN
+    PERMISSION = _download_permission()
 
     def get(self, request, *args, **kwargs):
         """
@@ -32,4 +44,4 @@ class DownloadDb(mixins.PermissionMixin, View):
         except Exception as e:
             messages.error(request,
                 f"Erreur lors de la sauvegarde de la base de données : {e}")
-            return redirect(urls.reverse("users:account"))
+            return redirect(getattr(settings, "ARCHIVES_ERROR_REDIRECT", "/"))

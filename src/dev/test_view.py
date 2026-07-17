@@ -10,7 +10,6 @@ from django import urls
 from django.core.files.uploadedfile import InMemoryUploadedFile
 from django.test import TestCase
 
-import users.models as um
 from utils.views import json_utils, static_assets
 
 class CheckNs():
@@ -94,7 +93,7 @@ class TestURL():
         self.url = urls.reverse(reverse, kwargs=kwargs)
         self.msg = kwargs.get("msg", "statut " + self.url)
 
-    def set_user(self, user: um.User):
+    def set_user(self, user):
         self.user = user
 
     # to ease override in child class
@@ -191,6 +190,7 @@ class PermissionCheck():
         """
         Test the url with users with and without the required role.
         """
+        import users.models as um
         user = um.User.objects.create_user(
             username="testuser_permcheck",
             email="testuser_permcheck@example.com",

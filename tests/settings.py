@@ -37,6 +37,15 @@ TEST_RUNNER = "dev.test_utils.DjangoRunner"
 
 AUTH_USER_MODEL = "users.User"
 
+# Permission concrète injectée dans base_archives.views.DownloadDb via son hook.
+# ARCHIVES_DOWNLOAD = SECRETARY | SCHOOL_ADMIN (cf. users.permissions).
+ARCHIVES_DOWNLOAD_PERMISSION = "users.permissions.ARCHIVES_DOWNLOAD"
+
+# base_settings ne câble plus le context_processor users-spécifique (chaque
+# consommateur l'ajoute) : le harnais de test, qui embarque encore users, le réinjecte.
+TEMPLATES[0]["OPTIONS"]["context_processors"].append(
+    "users.context_processors.set_prefs")
+
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
     "django.contrib.sessions.middleware.SessionMiddleware",

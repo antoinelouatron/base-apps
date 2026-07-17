@@ -12,7 +12,7 @@ from django.template import RequestContext
 from django.views.generic import TemplateView, View
 import django.template as template
 
-import users.permissions as up
+from utils import permissions as up
 from . import static_assets, json_utils, rich_results
 from utils import menu, actions
 
