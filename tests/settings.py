@@ -17,34 +17,26 @@ DATABASES = {
     },
 }
 
+# users/agenda ont été rapatriés dans le consommateur (blaise-colles). base_sites
+# ne teste plus que ses modules génériques, avec le User Django par défaut.
 INSTALLED_APPS += [
     "dev",
     "core",
-    "users",
-    "agenda",
     "bulkimport",
     "utils",
     "quill_editor",
     "base_archives"
 ]
 
-LOGIN_REDIRECT_URL = "/profil/"
+LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/login/"
 
 DEBUG = False
 
 TEST_RUNNER = "dev.test_utils.DjangoRunner"
 
-AUTH_USER_MODEL = "users.User"
-
-# Permission concrète injectée dans base_archives.views.DownloadDb via son hook.
-# ARCHIVES_DOWNLOAD = SECRETARY | SCHOOL_ADMIN (cf. users.permissions).
-ARCHIVES_DOWNLOAD_PERMISSION = "users.permissions.ARCHIVES_DOWNLOAD"
-
-# base_settings ne câble plus le context_processor users-spécifique (chaque
-# consommateur l'ajoute) : le harnais de test, qui embarque encore users, le réinjecte.
-TEMPLATES[0]["OPTIONS"]["context_processors"].append(
-    "users.context_processors.set_prefs")
+# Permission générique (superuser, sans rôle) injectée dans base_archives.DownloadDb.
+ARCHIVES_DOWNLOAD_PERMISSION = "utils.permissions.SUPERUSER"
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -54,16 +46,10 @@ MIDDLEWARE = [
     "django.contrib.auth.middleware.AuthenticationMiddleware",
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
-    "users.middlewares.SeeAsMiddleware",
 ]
 
 
 FORM_RENDERER = "utils.forms.renderer.CustomRenderer"
-
-AUTHENTICATION_BACKENDS = [
-    "django.contrib.auth.backends.ModelBackend",
-    "users.emailbackend.EMailBackend",
-]
 
 DJANGO_VITE = {
   "default": {

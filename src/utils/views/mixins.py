@@ -226,7 +226,7 @@ class ActionsMixin():
         if self.user.is_superuser:
             #act.append(actions.AvatarValidation(self.user.get_pending_avatars()))
             act.append(actions.AdminLink())
-        if self.user.is_authenticated and (self.user.teacher or self.user.is_staff):
+        if self.user.is_authenticated and (getattr(self.user, "teacher", False) or self.user.is_staff):
             act.append(actions.SeeAs())
             #act.append(actions.AddInscription())
         elif self.request.session.get("see_as", None):

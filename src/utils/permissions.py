@@ -77,3 +77,25 @@ class _NOT(Permission):
 
     def has_permission(self, user, level=None, subject=None) -> bool:
         return not self.permission.has_permission(user, level, subject)
+
+
+class IsAuthenticated(Permission):
+    """
+    Permission générique : utilisateur connecté (sans notion de rôle).
+    """
+
+    def has_permission(self, user, level=None, subject=None) -> bool:
+        return user.is_authenticated
+
+
+class IsSuperUser(Permission):
+    """
+    Permission générique : superutilisateur Django (sans notion de rôle).
+    """
+
+    def has_permission(self, user, level=None, subject=None) -> bool:
+        return user.is_authenticated and user.is_superuser
+
+
+AUTHENTICATED = IsAuthenticated()
+SUPERUSER = IsSuperUser()

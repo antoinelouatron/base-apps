@@ -3,12 +3,9 @@ See content.archive for more tests.
 Most parts of this app used to be in content.archive, but were moved
 to archives app to allow for a more generic backup system.
 """
-from django.conf import settings
-
 from base_archives import db_save
 from dev.test_utils import TestCase
 from dev import test_view, test_data
-import users.models as um
 
 
 class TestViews(TestCase, test_data.CreateUserMixin):
@@ -19,11 +16,9 @@ class TestViews(TestCase, test_data.CreateUserMixin):
         self.create_users()
         url.set_user(self.users[0])
         url.test()
-        url.user = self.staff_user
-        url.user.roles.add(
-            um.AtomicRole.create(secretary=True)
-        )
-        url.user.save()
+        # gating générique : seul un superutilisateur passe (cf. settings de test
+        # ARCHIVES_DOWNLOAD_PERMISSION = utils.permissions.SUPERUSER).
+        url.user = self.admin_user
         url.status = 200
         url.data = {
             "db_name": "default"

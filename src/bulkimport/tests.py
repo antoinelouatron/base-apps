@@ -11,9 +11,7 @@ from bulkimport.forms.importfile import FileImportForm, is_m2m
 from bulkimport import dict_utils
 from bulkimport.forms import fields as bf
 from bulkimport import importers
-from dev import test_view
 from dev.test_utils import TestCase
-import users.models as um
 
 class DummyModel(models.Model):
 
@@ -217,14 +215,3 @@ class TestFileImport(TestCase):
         with self.assertRaises(ValueError):
             importers.unregister("name")
     
-    def test_index_access(self):
-        url = test_view.TestURL(self, "import", "index", status=403)
-        url.test()
-        teach = um.User.objects.create_teacher(username="teach")
-        url.set_user(teach)
-        url.test() # only staff, no teachers
-        url.status = 200
-        teach.is_staff = True
-        teach.save()
-        url.set_user(teach)
-        url.test()
