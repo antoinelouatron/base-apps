@@ -46,6 +46,10 @@ class CreateUserMixin():
         if level is None:
             level = um.get_default_level(instance=True)
         for teach_dict in teach_list:
+            # copie : teach_list est souvent une constante module-level (TEACHERS)
+            # partagée entre tests ; muter subject/email en place la polluerait
+            # (get_or_create sauté au test suivant → matière manquante en base).
+            teach_dict = dict(teach_dict)
             if "subject" in teach_dict:
                 subj = teach_dict["subject"]
                 if not isinstance(subj, um.Subject):
