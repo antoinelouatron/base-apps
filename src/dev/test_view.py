@@ -154,15 +154,16 @@ class TestURL():
             resp.status_code,
             self.status,
             msg or self.msg)
-        if self.status == 200 and not self._ajax:
-            if hasattr(resp, "context") and resp.context is not None:
-                if "follow" not in request_kwargs and not skip_title:
-                    testcase.assertTrue(
-                        "page_title" in resp.context,
-                        "Page title " + self.url)
-                    testcase.assertTrue(
-                        resp.context["page_title"],
-                        "Page title " + self.url)
+        if self.status == 200:
+            if not self._ajax:
+                if hasattr(resp, "context") and resp.context is not None:
+                    if "follow" not in request_kwargs and not skip_title:
+                        testcase.assertTrue(
+                            "page_title" in resp.context,
+                            "Page title " + self.url)
+                        testcase.assertTrue(
+                            resp.context["page_title"],
+                            "Page title " + self.url)
             for test in self.tests:
                 testcase.assertTrue(test(resp), getattr(test, "msg", ""))
         self.resp = resp
