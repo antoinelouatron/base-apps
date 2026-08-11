@@ -4,6 +4,7 @@ date: 2025-07-01
 
 from io import StringIO
 from django.core.management import call_command
+from django.core.management.base import CommandError
 from django.test import tag
 
 from base_archives import db_save
@@ -28,9 +29,11 @@ class TestBackupDBCommand(TestCase):
     @tag("backup-db")
     def test_option_and_fail(self):
         """
-        Test the backup_db command with an invalid database name.
+        Un échec doit sortir en erreur, pas seulement écrire sur stderr : le
+        service systemd qui appelle cette commande chaque nuit est un
+        Type=oneshot, et un code de retour 0 lui fait conclure au succès.
         """
         out = StringIO()
-        err = StringIO()
-        call_command("backup_db", dbname="invalid_db", stdout=out, stderr=err)
-        self.assertIn("Error during backup", str(err.getvalue()))
+        with self.assertRaises(CommandError) as ctx:
+            call_command("backup_db", dbname="invalid_db", stdout=out)
+        self.assertIn("Error during backup", str(ctx.exception))

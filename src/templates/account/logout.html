@@ -1,24 +1,21 @@
 {% extends "users/password/base.html" %}
-{% load allauth i18n %}
+{% comment %}
+Confirmation de déconnexion.
+
+Ce gabarit chargeait `{% templatetag openblock %} load allauth {% templatetag closeblock %}` alors qu'allauth n'est pas
+installé : il n'explosait que parce que LOGOUT_REDIRECT_URL fait rediriger
+LogoutView sans jamais le rendre. Réécrit en Django nu, pour qu'il tienne
+debout le jour où on le rend vraiment.
+{% endcomment %}
 {% block content %}
-    {% element h1 %}
-        {% trans "Sign Out" %}
-    {% endelement %}
-    <p>{% trans 'Are you sure you want to sign out?' %}</p>
-    {% url 'account_logout' as action_url %}
-    {% element form method="post" action=action_url no_visible_fields=True %}
-        {% slot body %}
-            {% csrf_token %}
-            {% if redirect_field_value %}
-                <input type="hidden"
-                       name="{{ redirect_field_name }}"
-                       value="{{ redirect_field_value }}" />
-            {% endif %}
-        {% endslot %}
-        {% slot actions %}
-            {% element button type="submit" %}
-                {% trans 'Sign Out' %}
-            {% endelement %}
-        {% endslot %}
-    {% endelement %}
+    <h1 class="text-lg p-4">Déconnexion</h1>
+    <p class="prose dark:prose-invert p-2">Voulez-vous vraiment vous déconnecter ?</p>
+    <form method="post" action="{% url 'account_logout' %}" class="p-2">
+        {% csrf_token %}
+        {% if redirect_field_value %}
+        <input type="hidden" name="{{ redirect_field_name }}"
+            value="{{ redirect_field_value }}">
+        {% endif %}
+        <button type="submit" class="button">Se déconnecter</button>
+    </form>
 {% endblock content %}

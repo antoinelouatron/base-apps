@@ -100,7 +100,9 @@ TEMPLATES = [
 
 # base login config
 LOGIN_URL_NAME = "account_login"
-LOGIN_URL = "/login"
+# Slash final : la route est "login/", et sans lui chaque accès anonyme paie un
+# aller-retour de plus par APPEND_SLASH.
+LOGIN_URL = "/login/"
 
 # Password validation
 # https://docs.djangoproject.com/en/5.0/ref/settings/#auth-password-validators

@@ -5,7 +5,7 @@ date: 2025-07-01
 import datetime
 
 from django.conf import settings
-from django.core.management.base import BaseCommand
+from django.core.management.base import BaseCommand, CommandError
 
 from base_archives import db_save
 
@@ -40,6 +40,12 @@ class Command(BaseCommand):
             # clean up old backups
             self.clean_old_backups()
         except Exception as e:
-            self.stderr.write(f"Error during backup: {e}")
+            # CommandError, et non un simple message sur stderr : la commande
+            # sortait en 0 même après un pg_dump raté, donc le service systemd
+            # `Type=oneshot` qui l'appelle chaque nuit concluait au succès. Une
+            # base non sauvegardée pendant des semaines sans que rien ne le
+            # signale est le pire des scénarios ; il faut un code de retour non
+            # nul pour que OnFailure= se déclenche.
+            raise CommandError(f"Error during backup: {e}") from e
         else:
             self.stdout.write(self.style.SUCCESS("Database backup completed successfully"))
