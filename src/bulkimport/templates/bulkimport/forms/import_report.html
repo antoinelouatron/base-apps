@@ -1,0 +1,74 @@
+{% comment %}
+Détail d'un import refusé.
+
+Deux cas exclusifs : soit les colonnes ne correspondent pas, et le diagnostic
+est global (rien n'a même été tenté ligne par ligne) ; soit ce sont des lignes
+qui sont fautives, et on les liste avec leur position dans le fichier.
+{% endcomment %}
+<div class="msg-error">
+    {% if report.has_column_problem %}
+    <p class="font-medium">Les colonnes du fichier ne correspondent pas à ce qui est attendu.</p>
+    <div class="mt-2 flex flex-col gap-2 text-sm">
+        {% if report.missing_columns %}
+        <div>
+            <span class="font-medium">Colonnes manquantes :</span>
+            {% for col in report.missing_columns %}{% if not forloop.first %}, {% endif %}{{ col }}{% endfor %}
+        </div>
+        {% endif %}
+        {% if report.unmapped_fields %}
+        <div>
+            <span class="font-medium">Correspondance non renseignée pour :</span>
+            {% for name in report.unmapped_fields %}{% if not forloop.first %}, {% endif %}{{ name }}{% endfor %}
+        </div>
+        {% endif %}
+        {% if report.file_columns %}
+        <div>
+            <span class="font-medium">Colonnes trouvées dans le fichier :</span>
+            {% for col in report.file_columns %}{% if not forloop.first %}, {% endif %}{{ col }}{% endfor %}
+        </div>
+        {% endif %}
+        {% if report.expected_columns %}
+        <div>
+            <span class="font-medium">Colonnes attendues :</span>
+            {% for field, col in report.expected_columns.items %}{% if not forloop.first %}, {% endif %}{{ col }}{% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    {% else %}
+    <p class="font-medium">{{ report.error_count }} ligne{{ report.error_count|pluralize }} sur
+        {{ report.total_rows }} n'{{ report.error_count|pluralize:"a,ont" }} pas pu être importée{{ report.error_count|pluralize }}.
+        L'import est annulé en totalité : aucune donnée n'a été enregistrée.</p>
+    <div class="mt-2 overflow-x-auto">
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Position</th>
+                    <th>Données lues</th>
+                    <th>Erreurs</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for row in report.rows %}
+                <tr>
+                    <td class="whitespace-nowrap">{{ row.location|default:"-" }}</td>
+                    <td><code class="text-xs">{{ row.data }}</code></td>
+                    <td>
+                        <ul class="list-none flex flex-col gap-1">
+                            {% for label, messages in row.errors %}
+                            {% for message in messages %}
+                            <li>{% if label %}<span class="font-medium">{{ label }}</span> : {% endif %}{{ message }}</li>
+                            {% endfor %}
+                            {% endfor %}
+                        </ul>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% if report.hidden_count %}
+    <p class="mt-2 text-sm">... et {{ report.hidden_count }} autre{{ report.hidden_count|pluralize }}
+        ligne{{ report.hidden_count|pluralize }} en erreur. Corrigez celles-ci puis relancez l'import.</p>
+    {% endif %}
+    {% endif %}
+</div>

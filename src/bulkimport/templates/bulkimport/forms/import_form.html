@@ -1,0 +1,13 @@
+{% comment %}
+Gabarit de tous les FileImportForm (posé par FileImportForm.template_name).
+
+Les champs sont rendus comme partout ailleurs ; le rapport d'import s'ajoute
+dessous. Le champ « Fichier à importer » ne porte que le message de synthèse
+(« 12 lignes sur 340 comportent une erreur »), le détail vit ici : sans cette
+séparation, chaque ligne fautive fabriquait sa propre erreur de champ et une
+colonne mal nommée sortait trois cents messages.
+{% endcomment %}
+{% include "forms/div.html" %}
+{% if form.import_report.has_errors %}
+{% include "bulkimport/forms/import_report.html" with report=form.import_report %}
+{% endif %}
